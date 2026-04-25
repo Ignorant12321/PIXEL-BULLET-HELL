@@ -1,0 +1,18 @@
+{
+  "name": "pixel-starship",
+  "version": "1.3.0",
+  "private": true,
+  "description": "像素风横版弹幕防守小游戏，支持星舰选择、圣遗物、射程与配置化难度。",
+  "type": "commonjs",
+  "scripts": {
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "pixel",
+    "canvas",
+    "game",
+    "bullet-hell",
+    "tower-defense"
+  ],
+  "license": "UNLICENSED"
+}

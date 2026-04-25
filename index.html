@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>像素星舰</title>
+  <meta name="description" content="像素风横版弹幕防守游戏，选择星舰、守住基地并击破第一幕 Boss。" />
+  <meta name="theme-color" content="#030713" />
+  <link rel="stylesheet" href="./src/styles/app.css" />
+</head>
+<body>
+<main class="app" aria-label="像素星舰">
+
+  <header class="topbar">
+    <section class="brand" aria-label="游戏标题">
+      <p>ACT 01 / PIXEL BULLET HELL</p>
+      <h1>像素星舰</h1>
+    </section>
+    <section class="stats" aria-label="战斗数据">
+      <div title="分数"><span>★</span><small>分数</small><strong id="scoreText">0</strong></div>
+      <div title="晶币"><span>￥</span><small>晶币</small><strong id="coinText">0</strong></div>
+      <div title="波次"><span>⚔</span><small>波次</small><strong id="waveText">1/10</strong></div>
+      <div title="最高"><span>🏆</span><small>最高</small><strong id="bestText">0</strong></div>
+    </section>
+  </header>
+
+  <section class="layout">
+    <section class="arena" aria-label="战斗区域">
+      <canvas id="game" width="960" height="540"></canvas>
+      <div class="scan"></div>
+
+      <div class="actions" aria-label="快捷操作">
+        <button id="startBtn" aria-label="开始或重开"><i id="startIcon">▶</i><em id="startLabel">开始</em></button>
+        <button id="pauseBtn"><i id="pauseIcon">Ⅱ</i><em>P</em></button>
+        <button id="shopBtn"><i>▣</i><em>B</em></button>
+        <button id="codexBtn"><i>▤</i><em>C</em></button>
+        <button id="bombBtn"><i>✦</i><em id="bombTop">2</em></button>
+        <button id="muteBtn"><i>♪</i><em id="muteText">开</em></button>
+      </div>
+
+
+
+      <div class="touch-controls" aria-label="触屏操作">
+        <div class="touch-dpad" aria-label="移动方向">
+          <button data-input="up" aria-label="上移">▲</button>
+          <button data-input="left" aria-label="左移">◀</button>
+          <button data-input="down" aria-label="下移">▼</button>
+          <button data-input="right" aria-label="右移">▶</button>
+        </div>
+        <div class="touch-actions" aria-label="战斗动作">
+          <button data-input="slow" aria-label="慢速移动">慢</button>
+          <button data-input="bomb" aria-label="释放歼灭弹">✦</button>
+        </div>
+      </div>
+
+      <div id="arenaBuffs" class="arena-buffs" aria-label="Buff 状态"></div>
+
+      <div id="brief" class="brief" role="dialog" aria-live="polite">
+        <h2 id="briefTitle">待命</h2>
+        <p id="briefText">敌人从左侧进入，守住右侧基地。</p>
+        <div id="shipSelect" class="ship-select" aria-label="选择像素星舰"></div>
+        <div class="brief-actions">
+          <button id="briefNext">开始</button>
+          <button id="briefShop">商店</button>
+          <button id="briefRestart">重开</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="dock" aria-label="舰桥终端">
+      <section class="card status-card">
+        <div class="card-head"><h2>舰桥状态</h2><span id="phaseText">待命</span></div>
+        <div class="barrow"><span>机体生命</span><strong id="hpText">76/76</strong></div>
+        <div class="meter"><i id="hpFill"></i></div>
+        <div class="barrow"><span>基地生命</span><strong id="baseText">160/160</strong></div>
+        <div class="meter base"><i id="baseFill"></i></div>
+        <div class="ministats">
+          <div><span>伤害</span><strong id="damageText">1</strong></div>
+          <div><span>弹道</span><strong id="laneText">1</strong></div>
+          <div><span>射速</span><strong id="rateText">1.0x</strong></div>
+          <div><span>射程</span><strong id="rangeText">360</strong></div>
+          <div><span>歼灭弹</span><strong id="bombText">2</strong></div>
+        </div>
+      </section>
+      <section class="card upgrades">
+        <div class="card-head"><h2>圣遗物</h2><span>效果数量</span></div>
+        <div id="upgradeSummary" class="relic-grid" aria-label="圣遗物效果"></div>
+      </section>
+      <section class="card help">
+        <h2>操作</h2>
+        <p>移动：WASD / 方向键<br>慢速：Shift　歼灭弹：X<br>商店：B　图鉴：C　暂停：P　重开：↻</p>
+      </section>
+    </aside>
+  </section>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <section id="modalLayer" class="modal-layer hidden" aria-label="弹窗层">
+    <div id="shopModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <header>
+        <p>SUPPLY BAY</p>
+        <h2 id="shopTitle">商店</h2>
+        <strong>￥ <span id="shopCoin">0</span></strong>
+      </header>
+      <nav id="shopTabs" class="tabs" aria-label="商店选项卡"></nav>
+      <div id="shopGrid" class="grid" aria-label="商店物品"></div>
+      <footer>
+        <span>基地不会自动回复；盲盒会按投入金额抽取 10%～200% 晶币。</span>
+        <div class="modal-actions">
+          <button id="shopBack">返回战场</button>
+        </div>
+      </footer>
+    </div>
+
+    <div id="codexModal" class="modal codex hidden" role="dialog" aria-modal="true" aria-labelledby="codexTitle">
+      <header>
+        <p>ARCHIVE</p>
+        <h2 id="codexTitle">图鉴</h2>
+      </header>
+      <nav id="codexTabs" class="tabs" aria-label="图鉴选项卡"></nav>
+      <div id="codexGrid" class="grid" aria-label="图鉴条目"></div>
+      <footer>
+        <span>遭遇敌人、拾取道具或购买升级后会点亮条目。</span>
+        <div class="modal-actions">
+          <button id="codexBack">返回战场</button>
+        </div>
+      </footer>
+    </div>
+  </section>
+</main>
+
+  <script src="./src/js/core/namespace.js"></script>
+  <script src="./src/js/data/game-data.js"></script>
+  <script src="./src/js/data/difficulty-config.js"></script>
+  <script src="./src/js/systems/audio.js"></script>
+  <script src="./src/js/systems/input.js"></script>
+  <script src="./src/js/entities/factory.js"></script>
+  <script src="./src/js/render/renderer.js"></script>
+  <script src="./src/js/game/game.js"></script>
+  <script src="./src/js/ui/ui.js"></script>
+  <script src="./src/js/main.js"></script>
+</body>
+</html>
