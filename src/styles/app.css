@@ -899,3 +899,175 @@ button:focus-visible {
 @media (hover: none), (pointer: coarse) {
   .arena-buffs { bottom: 104px; }
 }
+
+/* ── Layout refactor: compact HUD, reordered sidebar, cleaner shop ───── */
+.app { grid-template-rows: 86px minmax(0, 1fr); }
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+}
+.brand { flex: 1 1 auto; }
+.stats {
+  flex: 0 0 auto;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(110px, 132px);
+  gap: 6px;
+}
+.stats div {
+  height: 56px;
+  padding: 8px 10px;
+  background: rgba(4, 8, 20, 0.52);
+}
+.layout { grid-template-columns: minmax(0, 1fr) 360px; }
+.dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ship-panel, .weapon-panel, .status-card, .help { flex: 0 0 auto; }
+.ship-info, .weapon-detail { margin-top: 10px; }
+.ship-overview, .weapon-focus {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.ship-icon .pix, .weapon-focus-icon .pix {
+  width: 58px;
+  height: 58px;
+  padding: 4px;
+}
+.ship-copy h3, .weapon-focus-copy h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.ship-copy small, .weapon-focus-copy small {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 900;
+}
+.ship-copy p, .weapon-focus-copy p { margin: 8px 0 0; }
+.ship-special, .weapon-desc { color: var(--text) !important; }
+.ship-facts {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.ship-facts div {
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+.ship-facts span, .weapon-focus-copy p:first-of-type {
+  color: var(--muted);
+  font-size: 12px;
+}
+.ship-facts strong {
+  display: block;
+  margin-top: 4px;
+}
+.weapon-switch {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.weapon-chip {
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  text-align: left;
+  box-shadow: none;
+}
+.weapon-chip.active {
+  border-color: rgba(86, 246, 255, 0.7);
+  background: rgba(86, 246, 255, 0.14);
+}
+.weapon-chip-icon .pix {
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+}
+.weapon-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-card .ministats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.help p {
+  margin-top: 10px;
+  line-height: 1.8;
+}
+.brief {
+  top: 12px;
+  width: min(440px, 72%);
+  padding: 10px 16px 12px;
+  transform: translateX(-50%);
+}
+@keyframes brief-in {
+  from { opacity: 0; transform: translate(-50%, -10px) scale(0.96); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+.brief h2 {
+  margin-bottom: 6px;
+  font-size: 22px;
+}
+.brief p { margin-bottom: 10px; }
+.arena .toast {
+  top: 46px;
+  left: 50%;
+  min-width: 260px;
+  max-width: min(440px, 70%);
+}
+.grid { align-content: start; }
+.empty-state {
+  padding: 18px;
+  border: 1px dashed rgba(86, 246, 255, 0.3);
+  color: var(--muted);
+  background: rgba(3, 8, 20, 0.42);
+}
+.modal footer { justify-content: flex-end; }
+
+@media (max-width: 1280px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 320px; }
+  .stats { grid-auto-columns: minmax(98px, 120px); }
+}
+@media (max-width: 1040px) {
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .stats {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+  }
+  .layout { grid-template-columns: minmax(0, 1fr) 280px; }
+  .weapon-switch, .ship-facts, .status-card .ministats { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .dock { display: none; }
+}
+
+/* Keep ready/pause dialog centered; wave-start toast stays upper-center. */
+.brief {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+@keyframes brief-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}

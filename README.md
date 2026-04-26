@@ -1,79 +1,102 @@
 # 像素星舰
 
-一个像素风横版弹幕防守小游戏。玩家开局选择不同型号的像素星舰，守住右侧基地，通过击杀、拾取、商店圣遗物、有限射程武器与歼灭弹推进 10 波战斗并击破第一幕 Boss。
+一个像素风横版弹幕防守小游戏。玩家选择不同型号的星舰，守住右侧基地，抵御多波敌人并击破第一幕 Boss。
 
 ## 运行方式
 
-这是纯静态项目，不需要构建步骤。
+这是一个纯静态 ES Modules 项目，不需要额外构建。
 
-1. 直接双击 `index.html` 打开；或
-2. 在项目目录启动一个本地静态服务器：
+1. 推荐在项目目录运行本地静态服务器：
 
 ```bash
-python3 -m http.server 8000
+npm run serve
 ```
 
-然后在浏览器打开本地地址即可。
+2. 然后在浏览器中打开提示的本地地址。
 
-## 操作
+> 浏览器原生 ES Modules 在部分浏览器里不适合直接用 `file://` 打开，使用静态服务器最稳。
+
+## 操作说明
 
 - 移动：`WASD` / 方向键
 - 慢速移动：`Shift`
 - 开始 / 继续：`Space` / `Enter`
-- 左上角主按钮：待命时开始，战斗/暂停时重开
-- 歼灭弹：`X`
 - 暂停：`P`
+- 歼灭弹：`X`
 - 商店：`B`
 - 图鉴：`C`
-- 触屏设备：屏幕下方会显示虚拟方向键、慢速键和歼灭弹键
+- 触屏设备：支持屏幕方向键、慢速键和歼灭弹按钮
 
-## 项目结构
+## 目录结构
 
 ```text
-pixel-starship-project/
+Star War/
 ├─ index.html
-├─ README.md
 ├─ package.json
+├─ README.md
 └─ src/
    ├─ styles/
    │  └─ app.css
    └─ js/
       ├─ core/
-      │  └─ namespace.js            # 全局命名空间、工具函数、本地存储封装
+      │  └─ utils.js
       ├─ data/
-      │  ├─ game-data.js            # 星舰、怪物、掉落、升级、波次、图鉴数据
-      │  └─ difficulty-config.js    # 关卡难度递进专用配置
+      │  ├─ index.js
+      │  ├─ icons.js
+      │  ├─ storage.js
+      │  ├─ tabs.js
+      │  ├─ starships/
+      │  ├─ enemies/
+      │  ├─ pickups/
+      │  ├─ upgrades/
+      │  └─ acts/
+      │     └─ act-01/
+      │        ├─ index.js
+      │        └─ difficulty.js
       ├─ systems/
-      │  ├─ audio.js                # Web Audio 音效
-      │  └─ input.js                # 键盘、指针和触屏按钮输入
+      │  ├─ audio.js
+      │  └─ input.js
       ├─ entities/
-      │  └─ factory.js              # 玩家、敌人、子弹、导弹、掉落物、粒子工厂
+      │  └─ factory.js
       ├─ render/
-      │  └─ renderer.js             # Canvas 绘制
+      │  └─ renderer.js
       ├─ game/
-      │  └─ game.js                 # 游戏状态、战斗循环、商店购买和碰撞
+      │  ├─ game.js
+      │  ├─ state.js
+      │  ├─ waves.js
+      │  ├─ combat.js
+      │  ├─ economy.js
+      │  └─ pickups.js
       ├─ ui/
-      │  └─ ui.js                   # DOM 面板、商店、图鉴、提示和星舰选择
-      └─ main.js                    # 启动入口
+      │  └─ ui.js
+      └─ main.js
 ```
 
-## 本轮完善
+## 文件说明
 
-- 项目名称统一为“像素星舰”。
-- 圣遗物面板只显示已经获得的效果，未获得时不再占用格子。
-- 删除顶部复杂 wavebox，关卡进度改为战场右下角的低存在感简约进度条。
-- 商店和图鉴删除右上角关闭按钮，以及继续/下一波、重开按钮；只保留右下角“返回战场”。
-- 晶币统一使用 `￥` 符号。
-- 星舰生命改为数值生命池，敌人撞击或弹幕会按攻击力扣除生命，不再表现为“次数”。
-- 新增 `src/js/data/difficulty-config.js`，集中管理每波普通敌人、精英和 Boss 的生命、攻击、速度、射速与刷怪节奏成长。
-- 新增射程限制：主炮、导弹和僚机都受射程影响，战场中会显示低透明度射程线。
-- 新增三种开局像素星舰：逐光号、玄武号、天枢号；每艘有不同图片、生命、攻击、速度、射程和开局特性。
-- 保留并继续完善 Buff 倒计时、歼灭弹压缩脉冲、盲盒 10%～200% 晶币返还、图鉴同步像素图案等功能。
+- `index.html`：页面入口，只加载 `src/js/main.js` 这一个 `type="module"` 脚本。
+- `src/js/main.js`：初始化数据、游戏实例和 UI，并保留 `window.pixelStarship` 调试入口。
+- `src/js/core/utils.js`：通用数学、碰撞、HTML 转义、存储和像素图标工具。
+- `src/js/data/index.js`：唯一的数据聚合入口，组装星舰、敌人、掉落、升级、幕、波次、难度和图鉴。
+- `src/js/game/game.js`：游戏主循环和状态编排；状态、波次、战斗、经济、拾取的独立规则放在同目录模块中。
+- `src/js/entities/factory.js`：创建玩家、敌人、子弹、导弹、掉落物和粒子。
+- `src/js/render/renderer.js`：Canvas 渲染层。
+- `src/js/ui/ui.js`：DOM 面板、商店、图鉴、提示框、星舰选择和按钮交互。
 
-## 开发提示
+## 扩展玩法
 
-- 新增星舰、敌人、掉落、升级、波次：优先改 `src/js/data/game-data.js`。
-- 调整关卡难度递进：改 `src/js/data/difficulty-config.js`。
-- 调整数值、碰撞、购买逻辑：改 `src/js/game/game.js`。
-- 调整画面表现：改 `src/js/render/renderer.js` 与 `src/styles/app.css`。
-- 调整按钮、面板、商店和图鉴 DOM：改 `src/js/ui/ui.js`。
+- 新增星舰：添加 `src/js/data/starships/<id>.js`，并在 `src/js/data/starships/index.js` 导入导出。
+- 新增敌人：添加 `src/js/data/enemies/<id>.js`，并在 `src/js/data/enemies/index.js` 导入导出。
+- 新增掉落：添加 `src/js/data/pickups/<id>.js`，并在 `src/js/data/pickups/index.js` 导入导出。
+- 新增升级：添加 `src/js/data/upgrades/<id>.js`，并在 `src/js/data/upgrades/index.js` 导入导出。
+- 新增波次：直接在对应幕目录下新增 `wave-xx.js`，并在该幕的 `index.js` 里注册。
+- 新增幕：按 `src/js/data/acts/act-01/` 的结构创建 `act-02/`，并在 `src/js/data/acts/index.js` 注册。
+
+## 开发参考
+
+- 想调整数值：优先看 `src/js/data/` 下的单文件数据。
+- 想调整战斗逻辑：看 `src/js/game/combat.js` 和 `src/js/game/game.js`。
+- 想调整波次推进：看 `src/js/game/waves.js` 和 `src/js/data/acts/act-01/index.js`。
+- 想调第几波的难度倍率：看 `src/js/data/acts/act-01/difficulty.js`，里面按 `wave01` 到 `wave10` 分开了。
+- 想改画面表现：看 `src/js/render/renderer.js` 和 `src/styles/app.css`。
+- 想改界面交互：看 `src/js/ui/ui.js` 和 `src/js/systems/input.js`。

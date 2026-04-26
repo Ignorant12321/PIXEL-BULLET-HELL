@@ -38,8 +38,6 @@
         <button id="muteBtn"><i>♪</i><em id="muteText">开</em></button>
       </div>
 
-
-
       <div class="touch-controls" aria-label="触屏操作">
         <div class="touch-dpad" aria-label="移动方向">
           <button data-input="up" aria-label="上移">▲</button>
@@ -65,11 +63,24 @@
           <button id="briefRestart">重开</button>
         </div>
       </div>
+
+      <div id="toast" class="toast" aria-live="polite"></div>
     </section>
 
     <aside class="dock" aria-label="舰桥终端">
+      <section class="card ship-panel">
+        <div class="card-head"><h2>星舰型号</h2><span id="phaseText">待命</span></div>
+        <div id="shipInfo" class="ship-info"></div>
+      </section>
+
+      <section class="card weapon-panel">
+        <div class="card-head"><h2>武器</h2><span id="weaponLabel">单轨主炮</span></div>
+        <div id="weaponSwitch" class="weapon-switch" aria-label="武器切换"></div>
+        <div id="weaponDetail" class="weapon-detail"></div>
+      </section>
+
       <section class="card status-card">
-        <div class="card-head"><h2>舰桥状态</h2><span id="phaseText">待命</span></div>
+        <div class="card-head"><h2>属性面板</h2><span>实时</span></div>
         <div class="barrow"><span>机体生命</span><strong id="hpText">76/76</strong></div>
         <div class="meter"><i id="hpFill"></i></div>
         <div class="barrow"><span>基地生命</span><strong id="baseText">160/160</strong></div>
@@ -82,18 +93,13 @@
           <div><span>歼灭弹</span><strong id="bombText">2</strong></div>
         </div>
       </section>
-      <section class="card upgrades">
-        <div class="card-head"><h2>圣遗物</h2><span>效果数量</span></div>
-        <div id="upgradeSummary" class="relic-grid" aria-label="圣遗物效果"></div>
-      </section>
+
       <section class="card help">
-        <h2>操作</h2>
+        <h2>提示</h2>
         <p>移动：WASD / 方向键<br>慢速：Shift　歼灭弹：X<br>商店：B　图鉴：C　暂停：P　重开：↻</p>
       </section>
     </aside>
   </section>
-
-  <div id="toast" class="toast" aria-live="polite"></div>
 
   <section id="modalLayer" class="modal-layer hidden" aria-label="弹窗层">
     <div id="shopModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
@@ -104,12 +110,7 @@
       </header>
       <nav id="shopTabs" class="tabs" aria-label="商店选项卡"></nav>
       <div id="shopGrid" class="grid" aria-label="商店物品"></div>
-      <footer>
-        <span>基地不会自动回复；盲盒会按投入金额抽取 10%～200% 晶币。</span>
-        <div class="modal-actions">
-          <button id="shopBack">返回战场</button>
-        </div>
-      </footer>
+      <footer><div class="modal-actions"><button id="shopBack">返回战场</button></div></footer>
     </div>
 
     <div id="codexModal" class="modal codex hidden" role="dialog" aria-modal="true" aria-labelledby="codexTitle">
@@ -119,25 +120,11 @@
       </header>
       <nav id="codexTabs" class="tabs" aria-label="图鉴选项卡"></nav>
       <div id="codexGrid" class="grid" aria-label="图鉴条目"></div>
-      <footer>
-        <span>遭遇敌人、拾取道具或购买升级后会点亮条目。</span>
-        <div class="modal-actions">
-          <button id="codexBack">返回战场</button>
-        </div>
-      </footer>
+      <footer><div class="modal-actions"><button id="codexBack">返回战场</button></div></footer>
     </div>
   </section>
 </main>
 
-  <script src="./src/js/core/namespace.js"></script>
-  <script src="./src/js/data/game-data.js"></script>
-  <script src="./src/js/data/difficulty-config.js"></script>
-  <script src="./src/js/systems/audio.js"></script>
-  <script src="./src/js/systems/input.js"></script>
-  <script src="./src/js/entities/factory.js"></script>
-  <script src="./src/js/render/renderer.js"></script>
-  <script src="./src/js/game/game.js"></script>
-  <script src="./src/js/ui/ui.js"></script>
-  <script src="./src/js/main.js"></script>
+  <script type="module" src="./src/js/main.js"></script>
 </body>
 </html>
