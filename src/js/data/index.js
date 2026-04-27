@@ -23,8 +23,7 @@ function buildCodex() {
     return { category: 'item', unlock: 'pickup:' + id, name: d.name, icon: d.icon, desc: d.desc };
   });
   return enemyCodex.concat([
-    { category: 'weapon', unlock: 'weapon:cannon', name: '单轨主炮', icon: 'cannon', desc: '初始武器：受星舰攻击、射程和射速影响。' },
-    { category: 'weapon', unlock: 'weapon:bomb', name: '歼灭弹', icon: 'bomb', desc: 'X 键释放压缩脉冲：清理局部弹幕、减速并伤害范围内敌人。' }
+    { category: 'weapon', unlock: 'weapon:cannon', name: '单轨主炮', icon: 'cannon', desc: '初始武器：受星舰攻击、射程和射速影响。' }
   ], upgradeCodex, pickupCodex);
 }
 

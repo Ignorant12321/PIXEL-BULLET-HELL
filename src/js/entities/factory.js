@@ -16,7 +16,7 @@ function difficultyFor(type, state, data) {
 export function createPlayer(state, data, U) {
   const ship = getShip(state, data);
   return {
-    x: U.clamp(state.w * 0.70, 36, state.base.x - 54),
+    x: U.clamp(state.base.x - 86, 36, state.base.x - 54),
     y: state.h * 0.52,
     radius: 16,
     shipId: ship.id,

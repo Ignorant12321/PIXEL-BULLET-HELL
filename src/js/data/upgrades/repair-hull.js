@@ -7,7 +7,7 @@ const repairHull = {
   max: 99,
   baseCost: 42,
   growth: 1,
-  desc: "立即恢复 34 点机体生命。"
+  desc: "加入道具栏，点击后恢复 34 点机体生命。"
 };
 
 export default repairHull;

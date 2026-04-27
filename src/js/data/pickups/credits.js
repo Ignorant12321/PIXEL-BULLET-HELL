@@ -2,7 +2,7 @@ const credits = {
   name: "晶币箱",
   icon: "credits",
   color: "#ffe66d",
-  desc: "获得额外晶币。",
+  desc: "收入道具栏，点击后获得额外晶币。",
   duration: 0
 };
 

@@ -157,12 +157,38 @@ function drawBullet(ctx, bullet) {
     ctx.fillStyle = '#ffab4d';
     ctx.fillRect(Math.round(bullet.x + 4), Math.round(bullet.y - 2), 5, 4);
   } else {
-    ctx.fillStyle = bullet.critical ? '#ffe66d' : '#56f6ff';
-    ctx.shadowColor = bullet.critical ? '#ffe66d' : '#56f6ff'; ctx.shadowBlur = bullet.critical ? 12 : 8;
-    ctx.fillRect(Math.round(bullet.x - 10), Math.round(bullet.y - 2), 15, 4);
-    if (bullet.pierce > 0) ctx.fillRect(Math.round(bullet.x - 15), Math.round(bullet.y - 1), 3, 2);
+    const sniper = bullet.weapon === 'sniper';
+    ctx.fillStyle = sniper ? '#ffe66d' : (bullet.critical ? '#ffe66d' : '#56f6ff');
+    ctx.shadowColor = sniper ? '#ffe66d' : (bullet.critical ? '#ffe66d' : '#56f6ff');
+    ctx.shadowBlur = sniper || bullet.critical ? 12 : 8;
+    ctx.fillRect(Math.round(bullet.x - (sniper ? 18 : 10)), Math.round(bullet.y - (sniper ? 3 : 2)), sniper ? 26 : 15, sniper ? 6 : 4);
+    if (bullet.pierce > 0) ctx.fillRect(Math.round(bullet.x - (sniper ? 24 : 15)), Math.round(bullet.y - 1), 4, 2);
   }
   ctx.restore();
+}
+
+function drawBeams(ctx, state) {
+  state.beams.forEach(function (beam) {
+    if (!beam.active) return;
+    ctx.save();
+    ctx.globalAlpha = 0.78;
+    ctx.strokeStyle = '#71a6ff';
+    ctx.shadowColor = '#71a6ff';
+    ctx.shadowBlur = 16;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(beam.x1), Math.round(beam.y1));
+    ctx.lineTo(Math.round(beam.x2), Math.round(beam.y2));
+    ctx.stroke();
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = '#ecfbff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(beam.x1), Math.round(beam.y1));
+    ctx.lineTo(Math.round(beam.x2), Math.round(beam.y2));
+    ctx.stroke();
+    ctx.restore();
+  });
 }
 
 function drawPickup(ctx, pickup, state) {
@@ -254,6 +280,7 @@ export function draw(ctx, state, data) {
   drawRangeGuide(ctx, state);
 
   state.pickups.forEach(function (p) { drawPickup(ctx, p, state); });
+  drawBeams(ctx, state);
   state.bullets.forEach(function (b) { drawBullet(ctx, b); });
   state.missiles.forEach(function (m) {
     m.trail.forEach(function (t) {

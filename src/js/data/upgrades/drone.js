@@ -1,6 +1,6 @@
 const drone = {
   id: "drone",
-  category: "weapon",
+  category: "forge",
   name: "僚机中枢",
   icon: "drone",
   max: 2,

@@ -25,7 +25,9 @@ export function createView(state, data, selectors) {
     hp: state.player.hp, maxHp: state.player.max,
     base: state.base.hp, maxBase: state.base.max,
     damage: selectors.damage(), lanes: selectors.lanes(), rate: selectors.fireRate(), range: selectors.range(), bombs: state.bombs,
-    shipId: state.shipId, shipName: ship.name, shipIcon: ship.icon
+    shipId: state.shipId, shipName: ship.name, shipIcon: ship.icon,
+    activeWeapon: state.activeWeapon || 'cannon',
+    items: Object.assign({}, state.items || {})
   };
 }
 

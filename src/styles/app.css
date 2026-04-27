@@ -1071,3 +1071,197 @@ button:focus-visible {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(0.96); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+
+/* ── v1.4：HUD / weapon / item compact pass ───────────────────── */
+.app { grid-template-rows: 70px minmax(0, 1fr); }
+.topbar {
+  min-height: 0;
+  padding: 7px 10px;
+  gap: 10px;
+}
+.brand p { margin-bottom: 3px; font-size: 10px; }
+.brand h1 { font-size: clamp(24px, 2vw, 34px); }
+.stats {
+  grid-auto-columns: minmax(96px, 124px);
+  gap: 5px;
+}
+.stats div {
+  height: 46px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: 16px 1fr;
+  padding: 6px 8px;
+  border-color: rgba(86, 246, 255, 0.18);
+  background: linear-gradient(180deg, rgba(86,246,255,0.07), rgba(3,8,20,0.48));
+}
+.stats span {
+  width: 22px;
+  height: 22px;
+}
+.stats small { font-size: 10px; }
+.stats strong { font-size: 15px; }
+.layout { grid-template-columns: minmax(0, 1fr) 326px; }
+.dock { gap: 6px; }
+.card { padding: 9px 10px; }
+.card h2 { font-size: 15px; }
+.card-head span, .barrow span, .ministats span { font-size: 11px; }
+.ship-info, .weapon-detail { margin-top: 7px; }
+.ship-overview {
+  display: block;
+}
+.ship-title {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.ship-icon .pix {
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+}
+.ship-copy h3, .weapon-focus-copy h3 { font-size: 14px; }
+.ship-copy small, .weapon-focus-copy small { margin-top: 2px; font-size: 10px; }
+.ship-copy p {
+  margin-top: 6px;
+  line-height: 1.45;
+}
+.ship-special { color: var(--muted) !important; }
+.ship-facts {
+  margin-top: 7px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.ship-facts div { padding: 5px; }
+.ship-facts span { font-size: 10px; }
+.ship-facts strong { margin-top: 2px; font-size: 12px; }
+.weapon-switch {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.weapon-chip {
+  position: relative;
+  width: 38px;
+  min-width: 38px;
+  min-height: 34px;
+  grid-template-columns: 1fr;
+  place-items: center;
+  padding: 4px;
+}
+.weapon-chip.active {
+  width: min(100%, 142px);
+  grid-template-columns: 24px minmax(0, 1fr);
+  justify-items: start;
+}
+.weapon-chip:not(.active) .weapon-chip-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.weapon-chip-icon .pix {
+  width: 24px;
+  height: 24px;
+}
+.weapon-focus {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+}
+.weapon-focus-icon .pix {
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+}
+.weapon-focus-copy p {
+  margin-top: 5px;
+  line-height: 1.42;
+}
+.status-card .barrow { margin-top: 7px; }
+.meter { height: 10px; }
+.status-card .ministats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 7px;
+}
+.ministats div { padding: 5px 4px; }
+.item-tray {
+  margin-top: 7px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+.item-use {
+  position: relative;
+  min-width: 0;
+  height: 34px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 5px;
+  box-shadow: none;
+}
+.item-use span .pix {
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+}
+.item-use em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+  font-size: 10px;
+}
+.item-use strong { font-size: 11px; }
+.item-empty {
+  grid-column: 1 / -1;
+  padding: 7px;
+  border: 1px dashed rgba(86, 246, 255, 0.2);
+  color: var(--muted);
+  text-align: center;
+  font-size: 11px;
+}
+.help p { margin-top: 6px; line-height: 1.45; }
+.modal { height: min(570px, calc(100vh - 36px)); }
+.grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+}
+.item {
+  min-height: 122px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 7px 8px;
+  padding: 9px;
+}
+.item .pix {
+  width: 42px;
+  height: 42px;
+  padding: 3px;
+}
+.item p { line-height: 1.42; }
+
+@media (max-width: 1280px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 306px; }
+  .stats { grid-auto-columns: minmax(86px, 112px); }
+  .ship-facts, .status-card .ministats, .item-tray { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1040px) {
+  .app { grid-template-rows: 96px minmax(0, 1fr); }
+  .topbar { align-items: center; }
+  .layout { grid-template-columns: minmax(0, 1fr) 276px; }
+  .stats { width: auto; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .app { grid-template-rows: 92px minmax(0, 1fr); }
+  .topbar { display: grid; grid-template-columns: 1fr; }
+  .stats { width: 100%; }
+  .grid { grid-template-columns: 1fr; }
+}

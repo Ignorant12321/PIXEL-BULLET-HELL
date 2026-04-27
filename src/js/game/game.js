@@ -18,6 +18,8 @@ export function createGame(canvas, data, deps = {}) {
   let ui = null;
   let raf = 0;
   let lastTime = performance.now();
+  const itemKeys = Object.keys(data.pickups || {});
+  const itemMax = 5;
 
   function baseCfg() {
     return (data.difficulty && data.difficulty.base) || {
@@ -44,16 +46,19 @@ export function createGame(canvas, data, deps = {}) {
     shipId: U.load(data.storage.ship, firstShipId()),
     base: { x: 920, hp: baseCfg().baseHp, max: baseCfg().baseHp, radius: 22 },
     player: null,
+    activeWeapon: 'cannon',
     up: {},
-    unlocked: U.load(data.storage.codex, { 'weapon:cannon': true, 'weapon:bomb': true }),
+    items: {},
+    unlocked: U.load(data.storage.codex, { 'weapon:cannon': true }),
     buff: { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0 },
     shieldCharges: 0,
-    bullets: [], ebullets: [], missiles: [], bombEffects: [],
+    bullets: [], ebullets: [], missiles: [], beams: [], bombEffects: [],
     enemies: [], pickups: [], parts: [], stars: [],
     shake: 0, soundCooldown: 0, bombSeq: 0
   };
 
   data.upgrades.forEach(function (u) { state.up[u.id] = 0; });
+  itemKeys.forEach(function (key) { state.items[key] = 0; });
   state.level = level;
   state.label = label;
   state.range = range;
@@ -86,9 +91,17 @@ export function createGame(canvas, data, deps = {}) {
   function bombDamage() { return 32 + damage() * 5 + level('bombCore') * 10; }
   function bombEmpDuration() { return 1.7 + level('bombCore') * 0.35; }
   function armAudio() { if (audio.unlock) audio.unlock(); }
+  function weaponUnlocked(id) { return id === 'cannon' || level(id) > 0; }
+  function activeWeapon() {
+    if (!weaponUnlocked(state.activeWeapon)) state.activeWeapon = 'cannon';
+    return state.activeWeapon;
+  }
 
   function cost(item) { return upgradeCost(item, level); }
   function full(id) {
+    if (id === 'repairHull') return (state.items.hull || 0) >= itemMax;
+    if (id === 'repairBase') return (state.items.basekit || 0) >= itemMax;
+    if (id === 'bombPack') return state.bombs >= baseCfg().maxBombs;
     return isServiceFull(id, state, baseCfg);
   }
   function unlock(key) {
@@ -103,6 +116,15 @@ export function createGame(canvas, data, deps = {}) {
     if (state.score <= state.best) return;
     state.best = state.score;
     try { localStorage.setItem(data.storage.best, String(state.best)); } catch (_) {}
+  }
+
+  function stagePlayerAtBase() {
+    if (!state.player) return;
+    state.player.x = U.clamp(state.base.x - 86, 36, state.base.x - 54);
+    state.player.y = U.clamp(state.h * 0.52, 42, state.h - 42);
+    state.player.shootTimer = 0.12;
+    state.player.missileTimer = 0.2;
+    state.player.droneTimer = 0.2;
   }
 
   function resize() {
@@ -144,12 +166,13 @@ export function createGame(canvas, data, deps = {}) {
     state.bombs = Math.min(cfg.maxBombs, shipData().bombs || 2);
     state.buff = { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0 };
     state.shieldCharges = 0;
-    state.bullets = []; state.ebullets = []; state.missiles = []; state.bombEffects = [];
+    state.bullets = []; state.ebullets = []; state.missiles = []; state.beams = []; state.bombEffects = [];
     state.enemies = []; state.pickups = []; state.parts = [];
     state.shake = 0; state.bombSeq = 0;
     Object.keys(state.up).forEach(function (k) { state.up[k] = 0; });
+    Object.keys(state.items).forEach(function (k) { state.items[k] = 0; });
+    state.activeWeapon = 'cannon';
     unlock('weapon:cannon');
-    unlock('weapon:bomb');
     if (ui && !silent) ui.toast('系统重启，防线待命');
   }
 
@@ -167,6 +190,20 @@ export function createGame(canvas, data, deps = {}) {
     return true;
   }
 
+  function setWeapon(id) {
+    armAudio();
+    if (!weaponUnlocked(id)) {
+      if (ui) ui.toast('需要先在商店购买该武器');
+      return false;
+    }
+    state.activeWeapon = id;
+    if (ui) {
+      const item = id === 'cannon' ? { name: '单轨主炮' } : data.upgrades.find(function (u) { return u.id === id; });
+      ui.toast('已切换：' + ((item && item.name) || id));
+    }
+    return true;
+  }
+
   function buildQueue(wave) {
     return buildSpawnQueue(wave, state.waveIndex, data);
   }
@@ -180,7 +217,8 @@ export function createGame(canvas, data, deps = {}) {
     state.total = wave.entries.reduce(function (s, e) { return s + e[1]; }, 0);
     state.spawned = 0; state.defeated = 0;
     state.enemies = []; state.ebullets = [];
-    state.bullets = []; state.missiles = []; state.pickups = []; state.bombEffects = [];
+    state.bullets = []; state.missiles = []; state.beams = []; state.pickups = []; state.bombEffects = [];
+    stagePlayerAtBase();
     state.phase = 'playing';
     const shieldBonus = ship.shieldAtWave || 0;
     if (level('shield') > 0 || shieldBonus > 0) {
@@ -197,7 +235,7 @@ export function createGame(canvas, data, deps = {}) {
     state.player.hp = Math.min(state.player.max, state.player.hp + 10);
     state.done = Math.max(state.done, state.waveIndex + 1);
     state.waveIndex += 1;
-    state.ebullets = []; state.bullets = []; state.missiles = []; state.pickups = []; state.bombEffects = [];
+    state.ebullets = []; state.bullets = []; state.missiles = []; state.beams = []; state.pickups = []; state.bombEffects = [];
     if (state.waveIndex >= data.waves.length) {
       state.phase = 'victory';
       if (ui) ui.toast('第一幕完成！');
@@ -234,7 +272,7 @@ export function createGame(canvas, data, deps = {}) {
   function gameOver() {
     if (state.phase === 'gameover') return;
     state.phase = 'gameover'; state.overlay = false; state.beforeOverlay = null;
-    state.ebullets = []; state.bombEffects = []; state.shake = 12;
+    state.ebullets = []; state.beams = []; state.bombEffects = []; state.shake = 12;
     saveBest();
     if (ui) ui.toast('防线失守');
   }
@@ -271,6 +309,37 @@ export function createGame(canvas, data, deps = {}) {
   }
 
   function fireMain() {
+    const weapon = activeWeapon();
+    if (weapon === 'sniper') {
+      const target = nearestTargetInRange(range() * 0.35);
+      if (!target) {
+        state.player.shootTimer = 0.12;
+        return;
+      }
+      const isCrit = Math.random() < Math.min(0.50, critChance() + 0.10);
+      const shotDamage = Math.round((damage() * 4 + level('sniper') * 3) * (isCrit ? 2 : 1));
+      const bullet = E.createBullet('player', state.player.x - 28, state.player.y, -760, 0, 6, shotDamage, { range: range() * 1.28, life: 2.2 });
+      bullet.weapon = 'sniper';
+      bullet.pierce = 1 + level('pierce');
+      bullet.critical = isCrit;
+      state.bullets.push(bullet);
+      state.player.shootTimer = 1 / Math.max(0.55, 0.78 * fireRate());
+      audio.beep(420, 0.07, 'square');
+      return;
+    }
+    if (weapon === 'missile') {
+      const target = nearestTargetInRange(range() * 0.35);
+      if (!target) {
+        state.player.shootTimer = 0.18;
+        return;
+      }
+      const lvl = Math.max(1, level('missile'));
+      state.missiles.push(E.createMissile(state.player.x - 24, state.player.y + U.rand(-8, 8), 8 + lvl * 6 + Math.floor(damage() * 0.9), range() * 1.45));
+      state.player.shootTimer = Math.max(0.48, 1.12 - lvl * 0.12) / fireRate();
+      unlock('upgrade:missile');
+      audio.beep(540, 0.05, 'triangle');
+      return;
+    }
     if (!hasTargetInRange(20)) {
       state.player.shootTimer = 0.08;
       return;
@@ -294,6 +363,31 @@ export function createGame(canvas, data, deps = {}) {
     if (state.soundCooldown <= 0) {
       audio.beep(620, 0.04); state.soundCooldown = 0.12;
     }
+  }
+
+  function sustainBeam(dt) {
+    state.beams = [];
+    const target = nearestTargetInRange(30);
+    if (!target) return;
+    const p = state.player;
+    const lvl = Math.max(1, level('beam'));
+    const dps = (damage() * 2.1 + lvl * 2.2) * Math.max(0.85, fireRate());
+    target.hp -= dps * dt;
+    target.emp = Math.max(target.emp || 0, 0.08);
+    state.beams.push({
+      x1: p.x - 22,
+      y1: p.y,
+      x2: target.x + target.radius * 0.35,
+      y2: target.y,
+      active: true
+    });
+    p.beamTick = (p.beamTick || 0) - dt;
+    if (p.beamTick <= 0) {
+      emitParts(target.x, target.y, '#71a6ff', 3);
+      audio.beep(860, 0.025, 'sine', 0.025);
+      p.beamTick = 0.11;
+    }
+    if (target.hp <= 0) killEnemy(target);
   }
   function fireMissile() {
     const target = nearestTargetInRange(range() * 0.25);
@@ -336,8 +430,13 @@ export function createGame(canvas, data, deps = {}) {
     p.shootTimer -= dt;
     p.missileTimer -= dt;
     p.droneTimer -= dt;
-    if (p.shootTimer <= 0) fireMain();
-    if (level('missile') > 0 && p.missileTimer <= 0) fireMissile();
+    if (activeWeapon() === 'beam' && level('beam') > 0) {
+      sustainBeam(dt);
+      p.shootTimer = 0.08;
+    } else if (p.shootTimer <= 0) {
+      fireMain();
+    }
+    if (level('missile') > 0 && activeWeapon() !== 'missile' && p.missileTimer <= 0) fireMissile();
     if (level('drone') > 0 && p.droneTimer <= 0) fireDrone();
   }
 
@@ -473,22 +572,37 @@ export function createGame(canvas, data, deps = {}) {
     saveBest();
   }
 
-  function applyPickup(type) {
+  function collectPickup(type) {
+    const info = data.pickups[type] || data.pickups.credits;
+    unlock('pickup:' + type);
+    if (type === 'bomb') {
+      if (state.bombs >= baseCfg().maxBombs) {
+        if (ui) ui.toast('歼灭弹携带已满');
+        return false;
+      }
+      state.bombs = Math.min(baseCfg().maxBombs, state.bombs + 1);
+    } else {
+      state.items[type] = Math.min(itemMax, (state.items[type] || 0) + 1);
+    }
+    audio.beep(960, 0.07, 'triangle');
+    if (ui) ui.toast(info.name + ' 已入库');
+    return true;
+  }
+
+  function applyItemEffect(type) {
     const info = data.pickups[type] || data.pickups.credits;
     unlock('pickup:' + type);
     if (type === 'hull') {
-      state.player.hp = Math.min(state.player.max, state.player.hp + baseCfg().pickupHullRepair);
+      state.player.hp = Math.min(state.player.max, state.player.hp + baseCfg().hullRepair);
     } else if (type === 'shield') {
       state.buff.shield = Math.max(state.buff.shield, info.duration + level('shield'));
       state.shieldCharges = Math.max(state.shieldCharges, 1);
     } else if (type === 'overdrive') {
       state.buff.overdrive = Math.max(state.buff.overdrive, info.duration);
-    } else if (type === 'bomb') {
-      state.bombs = Math.min(baseCfg().maxBombs, state.bombs + 1);
     } else if (type === 'credits') {
       state.coins += 28 + Math.floor(Math.random() * 24);
     } else if (type === 'basekit') {
-      state.base.hp = Math.min(state.base.max, state.base.hp + baseCfg().pickupBaseRepair);
+      state.base.hp = Math.min(state.base.max, state.base.hp + baseCfg().baseRepair);
     } else if (type === 'timeslow') {
       state.buff.timeSlow = Math.max(state.buff.timeSlow, info.duration);
       state.enemies.forEach(function (enemy) { enemy.emp = Math.max(enemy.emp || 0, 1.2); });
@@ -496,7 +610,19 @@ export function createGame(canvas, data, deps = {}) {
       state.buff.bounty = Math.max(state.buff.bounty, info.duration);
     }
     audio.beep(960, 0.07, 'triangle');
-    if (ui) ui.toast(info.name + ' 已回收');
+    if (ui) ui.toast(info.name + ' 已使用');
+    return true;
+  }
+
+  function useItem(type) {
+    armAudio();
+    if (type === 'bomb') return bomb();
+    if (!data.pickups[type]) return false;
+    if ((state.items[type] || 0) <= 0) { if (ui) ui.toast('没有可用道具'); return false; }
+    if (type === 'hull' && state.player.hp >= state.player.max) { if (ui) ui.toast('机体生命已满'); return false; }
+    if (type === 'basekit' && state.base.hp >= state.base.max) { if (ui) ui.toast('基地生命已满'); return false; }
+    state.items[type] -= 1;
+    return applyItemEffect(type);
   }
 
   function damagePlayer(amount) {
@@ -560,7 +686,7 @@ export function createGame(canvas, data, deps = {}) {
     state.pickups.forEach(function (p) {
       if (!p || !p.active) return;
       if (!U.hit(p, state.player, 2)) return;
-      p.active = false; applyPickup(p.type);
+      p.active = false; collectPickup(p.type);
     });
   }
 
@@ -568,6 +694,7 @@ export function createGame(canvas, data, deps = {}) {
     state.bullets = state.bullets.filter(function (x) { return x && x.active; });
     state.ebullets = state.ebullets.filter(function (x) { return x && x.active; });
     state.missiles = state.missiles.filter(function (x) { return x && x.active; });
+    state.beams = state.beams.filter(function (x) { return x && x.active; });
     state.enemies = state.enemies.filter(function (x) { return x && x.active; });
     state.pickups = state.pickups.filter(function (x) { return x && x.active; });
     state.parts = state.parts.filter(function (x) { return x && x.active; });
@@ -579,7 +706,7 @@ export function createGame(canvas, data, deps = {}) {
     if (state.phase !== 'playing') { if (ui) ui.toast('作战中才能释放歼灭弹'); return false; }
     if (state.bombs <= 0) { if (ui) ui.toast('歼灭弹不足'); return false; }
     state.bombs -= 1;
-    unlock('weapon:bomb');
+    unlock('pickup:bomb');
     state.bombSeq += 1;
     state.bombEffects.push({
       id: state.bombSeq,
@@ -607,8 +734,8 @@ export function createGame(canvas, data, deps = {}) {
     if (level(id) >= item.max && item.type !== 'service' && item.type !== 'blind') { if (ui) ui.toast('该项目已满级'); return false; }
     state.coins -= price;
     if (item.type === 'service') {
-      if (id === 'repairHull') state.player.hp = Math.min(state.player.max, state.player.hp + baseCfg().hullRepair);
-      if (id === 'repairBase') state.base.hp = Math.min(state.base.max, state.base.hp + baseCfg().baseRepair);
+      if (id === 'repairHull') state.items.hull = Math.min(itemMax, (state.items.hull || 0) + 1);
+      if (id === 'repairBase') state.items.basekit = Math.min(itemMax, (state.items.basekit || 0) + 1);
       if (id === 'bombPack') { state.bombs = Math.min(baseCfg().maxBombs, state.bombs + 1); unlock('pickup:bomb'); }
     } else if (item.type === 'blind') {
       state.up[id] += 1;
@@ -623,9 +750,13 @@ export function createGame(canvas, data, deps = {}) {
       }
       if (id === 'baseArmor') state.base.hp = Math.min(state.base.max, state.base.hp + 8);
       unlock('upgrade:' + id);
+      if (item.category === 'weapon') {
+        state.activeWeapon = id;
+        unlock('weapon:' + id);
+      }
     }
     audio.beep(720, 0.07);
-    if (ui) ui.toast(item.name + ' 已采购');
+    if (ui) ui.toast(item.type === 'service' ? item.name + ' 已存入道具栏' : item.name + ' 已采购');
     return true;
   }
 
@@ -695,7 +826,8 @@ export function createGame(canvas, data, deps = {}) {
     updateParticles(dt);
     state.shake = Math.max(0, state.shake - dt * 18);
     state.soundCooldown = Math.max(0, state.soundCooldown - dt);
-    if (state.phase !== 'playing') return;
+    if (state.phase !== 'playing') { state.beams = []; return; }
+    if (activeWeapon() !== 'beam') state.beams = [];
     Object.keys(state.buff).forEach(function (k) { state.buff[k] = Math.max(0, state.buff[k] - dt); });
     if (state.buff.shield <= 0) state.shieldCharges = 0;
     updatePlayer(dt);
@@ -735,7 +867,7 @@ export function createGame(canvas, data, deps = {}) {
     setUI: function (nextUI) { ui = nextUI; },
     start: function () { if (!raf) raf = requestAnimationFrame(frame); },
     restart: function () { reset(false); },
-    primary, togglePause, beginOverlay, endOverlay, bomb, buy, level, cost, full, setShip,
+    primary, togglePause, beginOverlay, endOverlay, bomb, buy, level, cost, full, setShip, setWeapon, useItem,
     unlocked: function (key) { return !!state.unlocked[key]; },
     buffs, view,
     muted: audio.muted,
