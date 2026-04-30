@@ -1,3 +1,5 @@
+@import url("./armory.css");
+
 /* ── Design tokens ─────────────────────────────────────────── */
     :root {
       --bg:      #030713;
@@ -1264,4 +1266,124 @@ button:focus-visible {
   .topbar { display: grid; grid-template-columns: 1fr; }
   .stats { width: 100%; }
   .grid { grid-template-columns: 1fr; }
+}
+
+/* ── v1.5：bridge readouts and expanded ship roster ───────────── */
+.app { grid-template-rows: 64px minmax(0, 1fr); }
+.topbar {
+  grid-template-columns: minmax(220px, 0.72fr) minmax(460px, 1.28fr);
+  align-items: stretch;
+  padding: 6px 10px;
+  background:
+    linear-gradient(90deg, rgba(86, 246, 255, 0.09), transparent 38%),
+    rgba(7, 12, 29, 0.94);
+}
+.brand {
+  display: grid;
+  align-content: center;
+}
+.brand p {
+  margin-bottom: 2px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.brand h1 {
+  font-size: clamp(24px, 2vw, 32px);
+  letter-spacing: 0;
+}
+.stats {
+  align-self: center;
+  display: grid;
+  grid-template-columns: 1fr 0.9fr 1.1fr 1fr;
+  gap: 0;
+  min-height: 42px;
+  border: 1px solid rgba(86, 246, 255, 0.18);
+  background: rgba(2, 7, 18, 0.54);
+}
+.stats .stat-card,
+.stats div {
+  height: 42px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: 15px 1fr;
+  gap: 0 7px;
+  padding: 5px 10px;
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+  background: transparent;
+}
+.stats .stat-card:last-child,
+.stats div:last-child {
+  border-right: 0;
+}
+.stats .stat-wave {
+  background: linear-gradient(90deg, rgba(115, 255, 154, 0.08), rgba(86, 246, 255, 0.04));
+}
+.stats span {
+  width: 22px;
+  height: 22px;
+  border-color: rgba(86, 246, 255, 0.22);
+  background: rgba(86, 246, 255, 0.055);
+  font-size: 12px;
+}
+.stats small {
+  color: #8aa7c7;
+  font-size: 10px;
+}
+.stats strong {
+  align-self: end;
+  color: #f7fbff;
+  font-size: 16px;
+  line-height: 1.05;
+}
+.brief {
+  width: min(760px, 92%);
+}
+.ship-select {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-height: min(390px, 44vh);
+  overflow: auto;
+  padding-right: 2px;
+}
+.ship-card {
+  min-height: 112px;
+  padding: 7px 6px;
+}
+.ship-card span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (max-width: 1040px) {
+  .app { grid-template-rows: 92px minmax(0, 1fr); }
+  .topbar {
+    grid-template-columns: 1fr;
+    align-items: center;
+  }
+  .stats {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .app { grid-template-rows: 112px minmax(0, 1fr); }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats .stat-card,
+  .stats div {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  .stats .stat-card:nth-child(2n),
+  .stats div:nth-child(2n) {
+    border-right: 0;
+  }
+  .stats .stat-card:nth-last-child(-n + 2),
+  .stats div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+  .ship-select {
+    grid-template-columns: 1fr;
+  }
 }

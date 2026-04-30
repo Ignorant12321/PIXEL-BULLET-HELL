@@ -4,8 +4,10 @@ import starships from './starships/index.js';
 import enemies from './enemies/index.js';
 import pickups from './pickups/index.js';
 import upgrades from './upgrades/index.js';
+import armoryRoutes from './armory-routes.js';
 import acts, { waves } from './acts/index.js';
-import difficulty from './acts/act-01/difficulty.js';
+import act01Difficulty from './acts/act-01/difficulty.js';
+import act02Difficulty from './acts/act-02/difficulty.js';
 import { shopTabs, codexTabs } from './tabs.js';
 
 function buildCodex() {
@@ -22,16 +24,28 @@ function buildCodex() {
     const d = pickups[id];
     return { category: 'item', unlock: 'pickup:' + id, name: d.name, icon: d.icon, desc: d.desc };
   });
+  const armoryCodex = armoryRoutes.map(function (u) {
+    return { category: 'weapon', unlock: 'armory:' + u.id, name: u.name, icon: u.icon, desc: u.desc };
+  });
   return enemyCodex.concat([
     { category: 'weapon', unlock: 'weapon:cannon', name: '单轨主炮', icon: 'cannon', desc: '初始武器：受星舰攻击、射程和射速影响。' }
-  ], upgradeCodex, pickupCodex);
+  ], upgradeCodex, armoryCodex, pickupCodex);
 }
 
 export const codex = buildCodex();
 
-const data = {
-  storage, icons, starships, enemies, pickups, upgrades, acts, waves, difficulty, shopTabs, codexTabs, codex
+const difficulty = {
+  base: act01Difficulty.base,
+  acts: {
+    'act-01': act01Difficulty,
+    'act-02': act02Difficulty
+  },
+  waves: act01Difficulty.waves
 };
 
-export { storage, icons, starships, enemies, pickups, upgrades, acts, waves, difficulty, shopTabs, codexTabs };
+const data = {
+  storage, icons, starships, enemies, pickups, upgrades, armoryRoutes, acts, waves, difficulty, shopTabs, codexTabs, codex
+};
+
+export { storage, icons, starships, enemies, pickups, upgrades, armoryRoutes, acts, waves, difficulty, shopTabs, codexTabs };
 export default data;

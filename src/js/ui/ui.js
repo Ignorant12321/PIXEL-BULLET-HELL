@@ -1,8 +1,13 @@
-const $ = function (id) { return document.getElementById(id); };
+import { $, safeRatio } from './dom.js';
+import { buildHudReadouts } from './hud-view.js';
+import { createShopPanel } from './shop.js';
+import { createCodexPanel } from './codex.js';
 
 export function createUI(game, data, U) {
   const e = {
     score: $('scoreText'), coin: $('coinText'), wave: $('waveText'), best: $('bestText'),
+    statCards: Array.prototype.slice.call(document.querySelectorAll('[data-hud]')),
+    act: $('actText'),
     waveCount: $('waveCount'), waveFill: $('waveFill'), waveNodes: $('waveNodes'),
     hp: $('hpText'), hpFill: $('hpFill'), base: $('baseText'), baseFill: $('baseFill'),
     damage: $('damageText'), lane: $('laneText'), rate: $('rateText'), range: $('rangeText'),
@@ -24,29 +29,20 @@ export function createUI(game, data, U) {
   };
 
   const st = {
-    shopTab: 'weapon', codexTab: 'all',
     modal: null, toastTimer: 0,
-    lastCoins: -1, shopDirty: true,
-    shipKey: ''
+    shipKey: '', weaponKey: '', itemKey: '', buffKey: '', hudKey: ''
   };
 
-  function safeRatio(v, max) {
-    const r = Number(max) > 0 ? Number(v) / Number(max) : 0;
-    return U.clamp(Number.isFinite(r) ? r : 0, 0, 1);
-  }
+  const shopPanel = createShopPanel(game, data, U, e, {
+    onBought: function () {
+      st.weaponKey = '';
+      renderWeaponPanel(game.view());
+    }
+  });
+  const codexPanel = createCodexPanel(game, data, U, e);
 
   function shipById(id) {
     return (data.starships || []).find(function (ship) { return ship.id === id; }) || data.starships[0] || null;
-  }
-
-  function renderTabs(host, tabs, active, onSelect) {
-    if (!host) return;
-    host.innerHTML = tabs.map(function (tab) {
-      return '<button class="' + (tab.id === active ? 'active' : '') + '" data-tab="' + tab.id + '">' + U.escapeHtml(tab.name) + '</button>';
-    }).join('');
-    host.querySelectorAll('button').forEach(function (btn) {
-      btn.onclick = function () { onSelect(btn.dataset.tab); };
-    });
   }
 
   function updateWave(view) {
@@ -66,6 +62,9 @@ export function createUI(game, data, U) {
 
   function updateBuffs(list) {
     if (!e.arenaBuffs) return;
+    const key = list.map(function (b) { return b.name + ':' + b.time.toFixed(1); }).join('|');
+    if (st.buffKey === key) return;
+    st.buffKey = key;
     if (!list.length) { e.arenaBuffs.innerHTML = ''; return; }
     e.arenaBuffs.innerHTML = list.map(function (b) {
       const pct = U.clamp(b.time / (b.max || 10), 0, 1);
@@ -116,7 +115,7 @@ export function createUI(game, data, U) {
       paused: ['暂停', '战斗已暂停。', '继续'],
       intermission: ['备战', '上一波已清空。可补给后继续下一波。', '下一波'],
       gameover: ['防线失守', '星舰生命或基地生命归零。', '重开'],
-      victory: ['第一幕完成', '星环封锁已突破。', '重开']
+      victory: ['战役完成', '两幕防线已全部突破。', '重开']
     };
     const item = map[view.phase] || map.ready;
     e.brief.classList.remove('hidden');
@@ -174,6 +173,9 @@ export function createUI(game, data, U) {
     if (!e.weaponSwitch || !e.weaponDetail) return;
     const weapons = buildWeaponOptions(view);
     const active = weapons.find(function (item) { return item.id === view.activeWeapon; }) || weapons[0];
+    const key = weapons.map(function (item) { return item.id + ':' + item.tag; }).join('|') + ':' + active.id + ':' + view.damage + ':' + view.lanes + ':' + view.rate + ':' + view.range;
+    if (st.weaponKey === key) return;
+    st.weaponKey = key;
     if (e.weaponLabel) e.weaponLabel.textContent = active.name;
     e.weaponSwitch.innerHTML = weapons.map(function (item) {
       return '<button type="button" class="weapon-chip ' + (item.id === active.id ? 'active' : '') + '" data-weapon="' + item.id + '">' +
@@ -208,9 +210,14 @@ export function createUI(game, data, U) {
       entries.push({ id, count, name: item.name, icon: item.icon });
     });
     if (!entries.length) {
+      if (st.itemKey === 'empty') return;
+      st.itemKey = 'empty';
       e.itemTray.innerHTML = '<div class="item-empty">道具仓空</div>';
       return;
     }
+    const key = entries.map(function (item) { return item.id + ':' + item.count; }).join('|');
+    if (st.itemKey === key) return;
+    st.itemKey = key;
     e.itemTray.innerHTML = entries.map(function (item) {
       return '<button type="button" class="item-use" data-use-item="' + item.id + '" title="使用' + U.escapeHtml(item.name) + '"' + (item.count <= 0 ? ' disabled' : '') + '>' +
         '<span>' + U.icon(item.icon, data.icons) + '</span><em>' + U.escapeHtml(item.name) + '</em><strong>' + item.count + '</strong></button>';
@@ -222,67 +229,12 @@ export function createUI(game, data, U) {
     });
   }
 
-  function renderShop() {
-    const view = game.view();
-    e.shopCoin.textContent = U.num(view.coins);
-    renderTabs(e.shopTabs, data.shopTabs, st.shopTab, function (tab) { st.shopTab = tab; renderShop(); });
-    const items = data.upgrades.filter(function (item) { return item.category === st.shopTab; });
-    if (!items.length) {
-      e.shopGrid.innerHTML = '<article class="empty-state">当前分组暂无可购买项目。</article>';
-      st.lastCoins = view.coins; st.shopDirty = false; return;
-    }
-    e.shopGrid.innerHTML = items.map(function (item) {
-      const lv = game.level(item.id);
-      const price = game.cost(item);
-      const maxed = lv >= item.max && item.type !== 'service' && item.type !== 'blind';
-      const isFull = game.full(item.id);
-      const disabled = maxed || isFull || view.coins < price;
-      const lvText = item.type === 'service' ? '存入道具栏' : item.type === 'blind' ? '随机回报' : 'Lv ' + lv + '/' + item.max;
-      return [
-        '<article class="item">',
-        U.icon(item.icon, data.icons),
-        '<div><h3>' + U.escapeHtml(item.name) + '</h3><div class="meta">' + lvText + '</div></div>',
-        '<p>' + U.escapeHtml(item.desc) + '</p>',
-        '<footer><span class="price">￥ ' + U.num(price) + '</span>',
-        '<button data-buy="' + item.id + '"' + (disabled ? ' disabled' : '') + '>' + (maxed || isFull ? '已满' : '购买') + '</button>',
-        '</footer></article>'
-      ].join('');
-    }).join('');
-    e.shopGrid.querySelectorAll('[data-buy]').forEach(function (btn) {
-      btn.onclick = function () {
-        if (game.buy(btn.dataset.buy)) {
-          st.shopDirty = true;
-          renderWeaponPanel(game.view());
-          renderShop();
-        }
-      };
-    });
-    st.lastCoins = view.coins;
-    st.shopDirty = false;
-  }
-
-  function renderCodex() {
-    renderTabs(e.codexTabs, data.codexTabs, st.codexTab, function (tab) { st.codexTab = tab; renderCodex(); });
-    const items = data.codex.filter(function (item) { return st.codexTab === 'all' || item.category === st.codexTab; });
-    e.codexGrid.innerHTML = items.map(function (item) {
-      const open = game.unlocked(item.unlock);
-      return [
-        '<article class="item ' + (open ? '' : 'locked') + '">',
-        U.icon(open ? item.icon : 'unknown', data.icons),
-        '<div><h3>' + U.escapeHtml(open ? item.name : '未知信号') + '</h3><div class="meta">' + U.escapeHtml(item.category) + '</div></div>',
-        '<p>' + U.escapeHtml(open ? item.desc : '继续战斗后会点亮该条目。') + '</p>',
-        '<footer><span class="price">' + (open ? '已解锁' : '未解锁') + '</span></footer>',
-        '</article>'
-      ].join('');
-    }).join('');
-  }
-
   function showModal(type) {
     e.layer.classList.remove('hidden');
     e.shopModal.classList.toggle('hidden', type !== 'shop');
     e.codexModal.classList.toggle('hidden', type !== 'codex');
-    if (type === 'shop') { st.shopDirty = true; renderShop(); }
-    else renderCodex();
+    if (type === 'shop') { shopPanel.markDirty(); shopPanel.render(); }
+    else { codexPanel.markDirty(); codexPanel.render(); }
   }
 
   function open(type) {
@@ -312,14 +264,29 @@ export function createUI(game, data, U) {
 
   function update() {
     const view = game.view();
-    e.score.textContent = U.num(view.score);
-    e.coin.textContent = U.num(view.coins);
-    e.wave.textContent = Math.min(data.waves.length, view.waveIndex + 1) + '/' + data.waves.length;
-    e.best.textContent = U.num(view.best);
+    const readouts = buildHudReadouts(view, data.waves.length);
+    const hudKey = readouts.map(function (item) { return item.id + ':' + item.label + ':' + item.value + ':' + item.detail; }).join('|');
+    if (st.hudKey !== hudKey) {
+      st.hudKey = hudKey;
+      readouts.forEach(function (item) {
+        const card = e.statCards.find(function (el) { return el.dataset.hud === item.id; });
+        if (!card) return;
+        const small = card.querySelector('small');
+        const strong = card.querySelector('strong');
+        if (small) small.textContent = item.label;
+        if (strong) strong.textContent = item.value;
+        card.title = item.detail;
+      });
+    }
+    e.score.textContent = readouts[0].value;
+    e.coin.textContent = readouts[1].value;
+    e.wave.textContent = readouts[2].value;
+    if (e.act) e.act.textContent = 'ACT ' + String((view.actIndex || 0) + 1).padStart(2, '0') + ' / ' + view.actCodename;
+    e.best.textContent = readouts[3].value;
     e.hp.textContent = Math.round(view.hp) + '/' + view.maxHp;
     e.base.textContent = Math.round(view.base) + '/' + view.maxBase;
-    e.hpFill.style.width = safeRatio(view.hp, view.maxHp) * 100 + '%';
-    e.baseFill.style.width = safeRatio(view.base, view.maxBase) * 100 + '%';
+    e.hpFill.style.width = safeRatio(U, view.hp, view.maxHp) * 100 + '%';
+    e.baseFill.style.width = safeRatio(U, view.base, view.maxBase) * 100 + '%';
     e.damage.textContent = view.damage;
     e.lane.textContent = view.lanes;
     e.rate.textContent = view.rate.toFixed(1) + 'x';
@@ -342,10 +309,7 @@ export function createUI(game, data, U) {
     renderWeaponPanel(view);
     renderItemTray(view);
 
-    if (st.modal === 'shop') {
-      const cv = view.coins;
-      if (st.shopDirty || cv !== st.lastCoins) renderShop();
-    }
+    if (st.modal === 'shop') shopPanel.render();
   }
 
   e.start.onclick = function () {

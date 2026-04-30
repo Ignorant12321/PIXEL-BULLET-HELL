@@ -21,6 +21,11 @@ export function createView(state, data, selectors) {
     waveIndex: idx, done: state.done,
     progress: state.total ? selectors.utils.clamp(state.defeated / state.total * 100, 0, 100) : 0,
     waveName: wave.name, kind: wave.kind,
+    actName: wave.actName || '第一幕',
+    actCodename: wave.actCodename || '星环封锁',
+    actIndex: wave.actIndex || 0,
+    localWave: wave.localWave || wave.wave,
+    globalWave: wave.globalWave || idx + 1,
     left: Math.max(0, state.total - state.defeated),
     hp: state.player.hp, maxHp: state.player.max,
     base: state.base.hp, maxBase: state.base.max,
@@ -37,6 +42,7 @@ export function createBuffList(state) {
   if (state.buff.overdrive > 0) list.push({ icon: '⚡', name: '超频', time: state.buff.overdrive, max: 8 });
   if (state.buff.timeSlow > 0) list.push({ icon: '◷', name: '时滞', time: state.buff.timeSlow, max: 5 });
   if (state.buff.bounty > 0) list.push({ icon: '￥', name: '赏金', time: state.buff.bounty, max: 8 });
+  if (state.buff.jam > 0) list.push({ icon: '×', name: '干扰', time: state.buff.jam, max: 3 });
   if (state.buff.inv > 0) list.push({ icon: '✚', name: '无敌', time: state.buff.inv, max: 1 });
   return list;
 }

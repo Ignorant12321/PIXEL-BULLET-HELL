@@ -1,4 +1,4 @@
-import { getWaveDifficulty } from '../data/acts/act-01/difficulty.js';
+import { getWaveDifficulty } from '../data/difficulty.js';
 
 export function buildSpawnQueue(wave, waveIndex, data) {
   let t = 0.38;

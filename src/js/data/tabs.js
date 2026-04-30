@@ -1,5 +1,5 @@
 export const shopTabs = [
-  { id: 'weapon', name: '武器' },
+  { id: 'armory', name: '军械库' },
   { id: 'forge', name: '锻造' },
   { id: 'item', name: '道具' },
   { id: 'blind', name: '盲盒' }

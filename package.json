@@ -5,7 +5,8 @@
   "description": "像素风横版弹幕防守小游戏，支持星舰选择、圣遗物、射程与配置化难度。",
   "type": "module",
   "scripts": {
-    "serve": "python -m http.server 8000"
+    "serve": "python -m http.server 8000",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "pixel",

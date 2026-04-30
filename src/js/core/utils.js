@@ -53,10 +53,14 @@ export function save(key, value) {
 
 export function icon(name, icons) {
   const pattern = (icons || {})[name] || (icons || {}).unknown || [];
+  const key = name + ':' + pattern.join('/');
+  if (!icon.cache) icon.cache = Object.create(null);
+  if (icon.cache[key]) return icon.cache[key];
   const cells = pattern.join('').split('').map(function (c) {
     return '<b class="' + (c === '0' ? '' : 'c' + c) + '"></b>';
   }).join('');
-  return '<div class="pix" aria-hidden="true">' + cells + '</div>';
+  icon.cache[key] = '<div class="pix" aria-hidden="true">' + cells + '</div>';
+  return icon.cache[key];
 }
 
 export function pick(list) {

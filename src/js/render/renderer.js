@@ -1,6 +1,7 @@
 import * as U from '../core/utils.js';
 
 let currentData = null;
+const spriteCache = new Map();
 
 const PIXEL_COLORS = {
   1: '#56f6ff',
@@ -15,16 +16,25 @@ const PIXEL_COLORS = {
 
 function drawPixelSprite(ctx, icon, x, y, scale, alpha) {
   const pattern = currentData.icons[icon] || currentData.icons.unknown;
+  const cacheKey = icon + ':' + pattern.join('/');
+  let pixels = spriteCache.get(cacheKey);
+  if (!pixels) {
+    pixels = [];
+    pattern.forEach(function (row, yy) {
+      for (let xx = 0; xx < row.length; xx++) {
+        const cell = row[xx];
+        if (cell !== '0') pixels.push({ xx, yy, color: PIXEL_COLORS[cell] || '#ecfbff' });
+      }
+    });
+    spriteCache.set(cacheKey, pixels);
+  }
   const s = scale || 3;
   ctx.save();
   ctx.globalAlpha = alpha == null ? 1 : alpha;
   ctx.translate(Math.round(x - pattern[0].length * s / 2), Math.round(y - pattern.length * s / 2));
-  pattern.forEach(function (row, yy) {
-    row.split('').forEach(function (cell, xx) {
-      if (cell === '0') return;
-      ctx.fillStyle = PIXEL_COLORS[cell] || '#ecfbff';
-      ctx.fillRect(xx * s, yy * s, s, s);
-    });
+  pixels.forEach(function (pixel) {
+    ctx.fillStyle = pixel.color;
+    ctx.fillRect(pixel.xx * s, pixel.yy * s, s, s);
   });
   ctx.restore();
 }
@@ -121,7 +131,7 @@ function drawEnemy(ctx, enemy) {
   const x = Math.round(enemy.x);
   const y = Math.round(enemy.y);
   const hpRatio = U.clamp(enemy.hp / enemy.max, 0, 1);
-  const scale = enemy.type === 'boss' ? 7 : enemy.type === 'elite' ? 5 : (enemy.type === 'tank' || enemy.type === 'gunner') ? 4 : 3;
+  const scale = enemy.role === 'boss' ? 7 : enemy.type === 'elite' ? 5 : (enemy.type === 'tank' || enemy.type === 'gunner' || enemy.type === 'shieldWarden') ? 4 : 3;
 
   ctx.save();
   if (enemy.emp > 0) {
@@ -134,13 +144,13 @@ function drawEnemy(ctx, enemy) {
     ctx.setLineDash([]);
   }
   ctx.shadowColor = data.color;
-  ctx.shadowBlur = enemy.type === 'boss' ? 18 : 10;
+  ctx.shadowBlur = enemy.role === 'boss' ? 18 : 10;
   drawPixelSprite(ctx, data.icon, x, y, scale, 1);
   ctx.restore();
 
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(x - enemy.radius, y - enemy.radius - 10, enemy.radius * 2, 4);
-  ctx.fillStyle = (enemy.type === 'boss' || enemy.type === 'elite') ? '#ffe66d' : '#73ff9a';
+  ctx.fillStyle = (enemy.role === 'boss' || enemy.type === 'elite') ? '#ffe66d' : '#73ff9a';
   ctx.fillRect(x - enemy.radius, y - enemy.radius - 10, enemy.radius * 2 * hpRatio, 4);
 }
 

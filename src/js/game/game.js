@@ -8,6 +8,11 @@ import { buildSpawnQueue } from './waves.js';
 import { upgradeCost, isServiceFull } from './economy.js';
 import { choosePickupType } from './pickups.js';
 import { moveProjectile } from './combat.js';
+import { createArmoryState, createArmorySystem } from './armory.js';
+import { createCombatSelectors } from './selectors.js';
+import { hasTargetInRange as hasTarget, nearestTargetInRange as nearestTarget } from './targets.js';
+import { compactActive } from './collections.js';
+import { applyEnemyAbility } from './enemy-abilities.js';
 
 export function createGame(canvas, data, deps = {}) {
   const ctx = canvas.getContext('2d');
@@ -48,9 +53,11 @@ export function createGame(canvas, data, deps = {}) {
     player: null,
     activeWeapon: 'cannon',
     up: {},
+    armory: createArmoryState(data.armoryRoutes || []),
+    armoryEffects: {},
     items: {},
     unlocked: U.load(data.storage.codex, { 'weapon:cannon': true }),
-    buff: { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0 },
+    buff: { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0, jam: 0 },
     shieldCharges: 0,
     bullets: [], ebullets: [], missiles: [], beams: [], bombEffects: [],
     enemies: [], pickups: [], parts: [], stars: [],
@@ -59,6 +66,8 @@ export function createGame(canvas, data, deps = {}) {
 
   data.upgrades.forEach(function (u) { state.up[u.id] = 0; });
   itemKeys.forEach(function (key) { state.items[key] = 0; });
+  const armory = createArmorySystem(data.armoryRoutes || [], state);
+  const combat = createCombatSelectors(state, baseCfg);
   state.level = level;
   state.label = label;
   state.range = range;
@@ -70,15 +79,31 @@ export function createGame(canvas, data, deps = {}) {
   }
 
   function label() { return phaseLabel(state.phase); }
-  function level(id) { return Number(state.up[id]) || 0; }
-  function damage() { return Math.max(1, Math.round((state.player ? state.player.damageBase : 1) + level('damage'))); }
-  function lanes() { return 1 + level('lanes'); }
-  function range() { return Math.round((state.player ? state.player.baseRange : 360) + level('range') * baseCfg().rangeUpgrade); }
-  function fireRate() {
-    const shipBonus = state.player ? state.player.fireRateBonus : 0;
-    return Math.max(0.35, 1 + shipBonus + level('fireRate') * 0.18 + (state.buff.overdrive > 0 ? 0.72 : 0));
+  function level(id) {
+    const legacy = {
+      damage: 'core-damage',
+      fireRate: 'core-rate',
+      range: 'core-range',
+      pierce: 'core-pierce',
+      crit: 'core-crit',
+      lanes: 'cannon-lanes',
+      sniper: 'sniper-core',
+      beam: 'beam-core',
+      missile: 'missile-core',
+      drone: 'drone-core',
+      bombCore: 'bomb-core'
+    };
+    if (legacy[id]) return armory.level(legacy[id]);
+    return Number(state.up[id]) || 0;
   }
-  function critChance() { return Math.min(0.35, level('crit') * 0.08); }
+  function refreshArmoryEffects() { state.armoryEffects = armory.effects(); }
+  refreshArmoryEffects();
+  function damage() { return combat.damage(); }
+  function lanes() { return combat.lanes(); }
+  function range() { return combat.range(); }
+  function fireRate() { return combat.fireRate(); }
+  function critChance() { return combat.critChance(); }
+  function pierce() { return combat.pierce(); }
   function coinMultiplier() {
     const shipBonus = state.player ? state.player.coinBonus : 0;
     return 1 + shipBonus + level('salvage') * 0.12 + (state.buff.bounty > 0 ? 0.50 : 0);
@@ -87,11 +112,11 @@ export function createGame(canvas, data, deps = {}) {
     const shipArmor = state.player ? state.player.baseArmor : 0;
     return Math.max(0.42, 1 - shipArmor - level('baseArmor') * 0.12);
   }
-  function bombRadius() { return Math.min(state.w * 0.44, 220 + level('bombCore') * 34); }
-  function bombDamage() { return 32 + damage() * 5 + level('bombCore') * 10; }
-  function bombEmpDuration() { return 1.7 + level('bombCore') * 0.35; }
+  function bombRadius() { return Math.min(state.w * 0.44, 220 + (state.armoryEffects.bombRadius || 0)); }
+  function bombDamage() { return 32 + damage() * 5 + (state.armoryEffects.bombDamage || 0); }
+  function bombEmpDuration() { return 1.7 + (state.armoryEffects.bombEmp || 0); }
   function armAudio() { if (audio.unlock) audio.unlock(); }
-  function weaponUnlocked(id) { return id === 'cannon' || level(id) > 0; }
+  function weaponUnlocked(id) { return combat.weaponUnlocked(id); }
   function activeWeapon() {
     if (!weaponUnlocked(state.activeWeapon)) state.activeWeapon = 'cannon';
     return state.activeWeapon;
@@ -164,12 +189,14 @@ export function createGame(canvas, data, deps = {}) {
     state.base.max = cfg.baseHp; state.base.hp = state.base.max;
     state.player = E.createPlayer(state, data, U);
     state.bombs = Math.min(cfg.maxBombs, shipData().bombs || 2);
-    state.buff = { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0 };
+    state.buff = { shield: 0, overdrive: 0, inv: 0, timeSlow: 0, bounty: 0, jam: 0 };
     state.shieldCharges = 0;
     state.bullets = []; state.ebullets = []; state.missiles = []; state.beams = []; state.bombEffects = [];
     state.enemies = []; state.pickups = []; state.parts = [];
     state.shake = 0; state.bombSeq = 0;
     Object.keys(state.up).forEach(function (k) { state.up[k] = 0; });
+    state.armory = createArmoryState(data.armoryRoutes || []);
+    refreshArmoryEffects();
     Object.keys(state.items).forEach(function (k) { state.items[k] = 0; });
     state.activeWeapon = 'cannon';
     unlock('weapon:cannon');
@@ -198,7 +225,7 @@ export function createGame(canvas, data, deps = {}) {
     }
     state.activeWeapon = id;
     if (ui) {
-      const item = id === 'cannon' ? { name: '单轨主炮' } : data.upgrades.find(function (u) { return u.id === id; });
+      const item = id === 'cannon' ? { name: '单轨主炮' } : (data.armoryRoutes || []).find(function (u) { return u.routeId === id && u.effects && u.effects.unlock === id; });
       ui.toast('已切换：' + ((item && item.name) || id));
     }
     return true;
@@ -226,7 +253,7 @@ export function createGame(canvas, data, deps = {}) {
       state.shieldCharges = Math.max(state.shieldCharges, 1 + Math.max(0, shieldBonus - 1));
     }
     audio.beep(520, 0.08, 'triangle');
-    if (ui) ui.toast('第 ' + wave.wave + ' 波开始：' + wave.kind);
+    if (ui) ui.toast(wave.actName + ' 第 ' + wave.wave + ' 波开始：' + wave.kind);
   }
 
   function completeWave() {
@@ -238,7 +265,7 @@ export function createGame(canvas, data, deps = {}) {
     state.ebullets = []; state.bullets = []; state.missiles = []; state.beams = []; state.pickups = []; state.bombEffects = [];
     if (state.waveIndex >= data.waves.length) {
       state.phase = 'victory';
-      if (ui) ui.toast('第一幕完成！');
+      if (ui) ui.toast('全部战役完成！');
     } else {
       state.phase = 'intermission';
       if (ui) ui.toast('波次肃清：奖励 ￥' + wave.reward + '，机体 +10');
@@ -293,19 +320,11 @@ export function createGame(canvas, data, deps = {}) {
   }
 
   function hasTargetInRange(extra) {
-    const p = state.player;
-    const r = range() + (extra || 0);
-    return state.enemies.some(function (enemy) {
-      return enemy.active && enemy.x <= p.x + enemy.radius && (p.x - enemy.x) <= r + enemy.radius;
-    });
+    return hasTarget(state, range(), extra);
   }
 
   function nearestTargetInRange(extra) {
-    const p = state.player;
-    const r = range() + (extra || 0);
-    return state.enemies.filter(function (enemy) {
-      return enemy.active && enemy.x <= p.x + enemy.radius && (p.x - enemy.x) <= r + enemy.radius;
-    }).sort(function (a, b) { return U.distanceSq(p, a) - U.distanceSq(p, b); })[0];
+    return nearestTarget(state, range(), extra);
   }
 
   function fireMain() {
@@ -317,10 +336,11 @@ export function createGame(canvas, data, deps = {}) {
         return;
       }
       const isCrit = Math.random() < Math.min(0.50, critChance() + 0.10);
-      const shotDamage = Math.round((damage() * 4 + level('sniper') * 3) * (isCrit ? 2 : 1));
+      const shotDamage = Math.round((damage() * 4 + (state.armoryEffects.sniperDamage || 0)) * (isCrit ? 2 : 1));
       const bullet = E.createBullet('player', state.player.x - 28, state.player.y, -760, 0, 6, shotDamage, { range: range() * 1.28, life: 2.2 });
       bullet.weapon = 'sniper';
-      bullet.pierce = 1 + level('pierce');
+      bullet.pierce = 1 + pierce() + (state.armoryEffects.sniperPierce || 0);
+      bullet.emp = state.armoryEffects.sniperEmp || 0;
       bullet.critical = isCrit;
       state.bullets.push(bullet);
       state.player.shootTimer = 1 / Math.max(0.55, 0.78 * fireRate());
@@ -334,8 +354,11 @@ export function createGame(canvas, data, deps = {}) {
         return;
       }
       const lvl = Math.max(1, level('missile'));
-      state.missiles.push(E.createMissile(state.player.x - 24, state.player.y + U.rand(-8, 8), 8 + lvl * 6 + Math.floor(damage() * 0.9), range() * 1.45));
-      state.player.shootTimer = Math.max(0.48, 1.12 - lvl * 0.12) / fireRate();
+      const count = 1 + Math.min(2, state.armoryEffects.missileSwarm || 0);
+      for (let i = 0; i < count; i++) {
+        state.missiles.push(E.createMissile(state.player.x - 24, state.player.y + U.rand(-8, 8), 8 + (state.armoryEffects.missileDamage || lvl * 5) + Math.floor(damage() * 0.9), range() * 1.45));
+      }
+      state.player.shootTimer = Math.max(0.42, 1.12 - (state.armoryEffects.missileRate || lvl * 0.12)) / fireRate();
       unlock('upgrade:missile');
       audio.beep(540, 0.05, 'triangle');
       return;
@@ -344,7 +367,7 @@ export function createGame(canvas, data, deps = {}) {
       state.player.shootTimer = 0.08;
       return;
     }
-    const count = lanes();
+    const count = Math.min(5, lanes());
     const spd = baseCfg().bulletSpeed || 560;
     const effectiveRange = range();
     const angles = count === 1 ? [Math.PI]
@@ -354,11 +377,11 @@ export function createGame(canvas, data, deps = {}) {
       const off = (i - (angles.length - 1) / 2) * 7;
       const isCrit = Math.random() < critChance();
       const bullet = E.createBullet('player', state.player.x - 22, state.player.y + off, Math.cos(angle) * spd, Math.sin(angle) * spd, 5, damage() * (isCrit ? 2 : 1), { range: effectiveRange });
-      bullet.pierce = level('pierce');
+      bullet.pierce = pierce();
       bullet.critical = isCrit;
       state.bullets.push(bullet);
     });
-    state.player.shootTimer = 1 / (3 * fireRate());
+    state.player.shootTimer = 1 / (3 * (fireRate() + (state.armoryEffects.cannonRate || 0)));
     state.soundCooldown -= state.player.shootTimer;
     if (state.soundCooldown <= 0) {
       audio.beep(620, 0.04); state.soundCooldown = 0.12;
@@ -371,9 +394,9 @@ export function createGame(canvas, data, deps = {}) {
     if (!target) return;
     const p = state.player;
     const lvl = Math.max(1, level('beam'));
-    const dps = (damage() * 2.1 + lvl * 2.2) * Math.max(0.85, fireRate());
+    const dps = (damage() * 2.1 + (state.armoryEffects.beamDamage || lvl * 2.2)) * Math.max(0.85, fireRate());
     target.hp -= dps * dt;
-    target.emp = Math.max(target.emp || 0, 0.08);
+    target.emp = Math.max(target.emp || 0, 0.08 + (state.armoryEffects.beamEmp || 0));
     state.beams.push({
       x1: p.x - 22,
       y1: p.y,
@@ -393,18 +416,36 @@ export function createGame(canvas, data, deps = {}) {
     const target = nearestTargetInRange(range() * 0.25);
     if (!target) { state.player.missileTimer = 0.20; return; }
     const lvl = level('missile');
-    state.missiles.push(E.createMissile(state.player.x - 24, state.player.y + U.rand(-10,10), 5 + lvl * 4 + Math.floor(damage() * 0.6), range() * 1.35));
-    state.player.missileTimer = Math.max(0.7, 1.85 - lvl * 0.28);
+    const count = 1 + Math.min(2, state.armoryEffects.missileSwarm || 0);
+    for (let i = 0; i < count; i++) {
+      state.missiles.push(E.createMissile(state.player.x - 24, state.player.y + U.rand(-12,12), 5 + (state.armoryEffects.missileDamage || lvl * 4) + Math.floor(damage() * 0.6), range() * 1.35));
+    }
+    state.player.missileTimer = Math.max(0.55, 1.85 - (state.armoryEffects.missileRate || lvl * 0.28));
     unlock('upgrade:missile');
+  }
+  function interceptEnemyBullets() {
+    const charges = Math.min(2, state.armoryEffects.droneIntercept || 0);
+    if (!charges) return;
+    let used = 0;
+    for (let i = 0; i < state.ebullets.length && used < charges; i++) {
+      const bullet = state.ebullets[i];
+      if (!bullet || !bullet.active) continue;
+      if (U.distanceSq(bullet, state.player) > 150 * 150) continue;
+      bullet.active = false;
+      used += 1;
+      emitParts(bullet.x, bullet.y, '#71a6ff', 4);
+    }
   }
   function fireDrone() {
     if (!hasTargetInRange(10)) { state.player.droneTimer = 0.16; return; }
+    interceptEnemyBullets();
     const lvl = level('drone');
-    const offsets = lvl >= 2 ? [-24, 24] : [-24];
+    const count = Math.max(1, Math.min(3, state.armoryEffects.droneCount || lvl));
+    const offsets = count >= 3 ? [-30, 0, 30] : count >= 2 ? [-24, 24] : [-24];
     offsets.forEach(function (off) {
-      state.bullets.push(E.createBullet('player', state.player.x - 28, state.player.y + off, -520, 0, 5, Math.max(1, lvl + Math.floor(damage() * 0.25)), { range: range() * 0.88 }));
+      state.bullets.push(E.createBullet('player', state.player.x - 28, state.player.y + off, -520, 0, 5, Math.max(1, (state.armoryEffects.droneDamage || lvl) + Math.floor(damage() * 0.25)), { range: range() * 0.88 }));
     });
-    state.player.droneTimer = 0.42;
+    state.player.droneTimer = Math.max(0.26, 0.42 - (state.armoryEffects.droneRate || 0));
     unlock('upgrade:drone');
   }
 
@@ -416,7 +457,7 @@ export function createGame(canvas, data, deps = {}) {
     if (k.up) dy -= 1; if (k.down) dy += 1;
     if (dx || dy) {
       const dir = U.norm(dx, dy);
-      const slow = k.slow ? 0.52 : 1;
+      const slow = (k.slow ? 0.52 : 1) * (state.buff.jam > 0 ? 0.74 : 1);
       p.x += dir.x * p.speed * slow * dt;
       p.y += dir.y * p.speed * slow * dt;
     }
@@ -440,8 +481,17 @@ export function createGame(canvas, data, deps = {}) {
     if (level('drone') > 0 && p.droneTimer <= 0) fireDrone();
   }
 
-  function spawnEnemy(type) {
-    state.enemies.push(E.createEnemy(type, state, data, U));
+  function spawnEnemy(type, origin) {
+    const enemy = E.createEnemy(type, state, data, U);
+    if (origin) {
+      enemy.x = origin.x;
+      enemy.y = U.clamp(origin.y, 58, state.h - 58);
+      if (origin.hpScale) {
+        enemy.hp = Math.max(1, Math.round(enemy.hp * origin.hpScale));
+        enemy.max = enemy.hp;
+      }
+    }
+    state.enemies.push(enemy);
     unlock('enemy:' + type);
   }
 
@@ -460,12 +510,14 @@ export function createGame(canvas, data, deps = {}) {
   function fireEnemy(enemy) {
     const damageValue = enemy.bulletDamage || Math.max(1, Math.round(enemy.damage * 0.45));
     if (!damageValue) return;
-    const spd = enemy.type === 'boss' ? 185 : 170;
+    const spd = enemy.role === 'boss' ? 185 : 170;
     const angle = U.angleTo(enemy, state.player);
-    const shots = enemy.type === 'boss' ? [-0.16, 0, 0.16] : [0];
+    const shots = enemy.role === 'boss' ? [-0.24, -0.08, 0.08, 0.24] : [0];
     shots.forEach(function (spread) {
       const a = angle + spread;
-      state.ebullets.push(E.createBullet('enemy', enemy.x + 18, enemy.y, Math.cos(a)*spd, Math.sin(a)*spd, 5, damageValue, { range: 9999 }));
+      const bullet = E.createBullet('enemy', enemy.x + 18, enemy.y, Math.cos(a)*spd, Math.sin(a)*spd, 5, damageValue, { range: 9999 });
+      if (enemy.ability && enemy.ability.type === 'jam') bullet.effect = { type: 'jam', duration: enemy.ability.duration || 3 };
+      state.ebullets.push(bullet);
     });
     enemy.fireTimer = enemy.fireEvery * U.rand(0.82, 1.16);
   }
@@ -479,6 +531,8 @@ export function createGame(canvas, data, deps = {}) {
     state.enemies.forEach(function (enemy) {
       if (!enemy.active) return;
       enemy.emp = Math.max(0, (enemy.emp || 0) - dt);
+      const abilityResult = applyEnemyAbility('tick', enemy, { state, dt, emitParts });
+      (abilityResult.spawns || []).forEach(function (spawn) { spawnEnemy(spawn.type, spawn); });
       const slowScale = (state.buff.timeSlow > 0 ? 0.55 : 1) * (enemy.emp > 0 ? 0.55 : 1);
       enemy.wobble += dt * 2.2 * slowScale;
       if (enemy.stopX && enemy.x >= enemy.stopX) {
@@ -489,7 +543,7 @@ export function createGame(canvas, data, deps = {}) {
         enemy.y += enemy.vy * dt * slowScale + Math.sin(enemy.wobble) * 10 * dt * slowScale;
       }
       enemy.y = U.clamp(enemy.y, 44, state.h - 44);
-      if (enemy.type !== 'boss' && enemy.x >= state.base.x - enemy.radius) {
+      if (enemy.role !== 'boss' && enemy.x >= state.base.x - enemy.radius) {
         markEnemyGone(enemy);
         damageBase(enemy.baseDamage || enemy.damage);
         emitParts(state.base.x, enemy.y, enemy.color, 10);
@@ -562,13 +616,15 @@ export function createGame(canvas, data, deps = {}) {
   function killEnemy(enemy) {
     if (!enemy || !enemy.active) return;
     enemy.active = false; state.defeated += 1;
+    const abilityResult = applyEnemyAbility('death', enemy, {});
+    (abilityResult.spawns || []).forEach(function (spawn) { spawnEnemy(spawn.type, spawn); });
     const coinReward = Math.max(1, Math.round(enemy.reward * coinMultiplier()));
     state.score += enemy.score; state.coins += coinReward; state.kills += 1;
     unlock('enemy:' + enemy.type);
     drop(enemy);
-    emitParts(enemy.x, enemy.y, enemy.color, enemy.type === 'boss' ? 26 : 12);
-    state.shake = Math.max(state.shake, enemy.type === 'boss' ? 16 : 5);
-    audio.beep(enemy.type === 'boss' ? 180 : 260, enemy.type === 'boss' ? 0.15 : 0.06, 'sawtooth');
+    emitParts(enemy.x, enemy.y, enemy.color, enemy.role === 'boss' ? 26 : 12);
+    state.shake = Math.max(state.shake, enemy.role === 'boss' ? 16 : 5);
+    audio.beep(enemy.role === 'boss' ? 180 : 260, enemy.role === 'boss' ? 0.15 : 0.06, 'sawtooth');
     saveBest();
   }
 
@@ -650,13 +706,17 @@ export function createGame(canvas, data, deps = {}) {
   }
 
   function collisions() {
-    state.bullets.concat(state.missiles).forEach(function (bullet) {
+    function collideProjectileList(list) {
+      list.forEach(function (bullet) {
       if (!bullet || !bullet.active) return;
       for (let i = 0; i < state.enemies.length; i++) {
         const enemy = state.enemies[i];
         if (!enemy || !enemy.active) continue;
         if (!U.hit(bullet, enemy, bullet.kind === 'missile' ? 4 : 0)) continue;
-        enemy.hp -= bullet.damage;
+        const abilityResult = applyEnemyAbility('incomingDamage', enemy, { damage: bullet.damage });
+        enemy.hp -= abilityResult.damage;
+        if (bullet.emp) enemy.emp = Math.max(enemy.emp || 0, bullet.emp);
+        if (bullet.kind === 'missile' && state.armoryEffects.missileEmp) enemy.emp = Math.max(enemy.emp || 0, state.armoryEffects.missileEmp);
         emitParts(bullet.x, bullet.y, bullet.critical ? '#ffe66d' : (bullet.kind === 'missile' ? '#ffe66d' : '#56f6ff'), bullet.kind === 'missile' ? 7 : (bullet.critical ? 6 : 3));
         if (bullet.kind === 'player' && bullet.pierce > 0) {
           bullet.pierce -= 1;
@@ -667,18 +727,24 @@ export function createGame(canvas, data, deps = {}) {
         if (enemy.hp <= 0) killEnemy(enemy);
         break;
       }
-    });
+      });
+    }
+    collideProjectileList(state.bullets);
+    collideProjectileList(state.missiles);
     state.ebullets.forEach(function (b) {
       if (!b || !b.active) return;
       if (!U.hit(b, state.player, 1)) return;
-      b.active = false; damagePlayer(b.damage);
+      b.active = false;
+      if (b.effect && b.effect.type === 'jam') state.buff.jam = Math.max(state.buff.jam || 0, b.effect.duration || 3);
+      damagePlayer(b.damage);
       emitParts(b.x, b.y, '#ff6370', 6);
     });
     state.enemies.forEach(function (enemy) {
       if (!enemy || !enemy.active) return;
       if (!U.hit(enemy, state.player, 1)) return;
+      applyEnemyAbility('hitPlayer', enemy, { state });
       damagePlayer(enemy.damage);
-      if (enemy.type !== 'boss' && enemy.type !== 'elite') {
+      if (enemy.role !== 'boss' && enemy.type !== 'elite') {
         markEnemyGone(enemy);
         emitParts(enemy.x, enemy.y, enemy.color, 10);
       }
@@ -691,14 +757,14 @@ export function createGame(canvas, data, deps = {}) {
   }
 
   function clean() {
-    state.bullets = state.bullets.filter(function (x) { return x && x.active; });
-    state.ebullets = state.ebullets.filter(function (x) { return x && x.active; });
-    state.missiles = state.missiles.filter(function (x) { return x && x.active; });
-    state.beams = state.beams.filter(function (x) { return x && x.active; });
-    state.enemies = state.enemies.filter(function (x) { return x && x.active; });
-    state.pickups = state.pickups.filter(function (x) { return x && x.active; });
-    state.parts = state.parts.filter(function (x) { return x && x.active; });
-    state.bombEffects = state.bombEffects.filter(function (x) { return x && x.active; });
+    compactActive(state.bullets);
+    compactActive(state.ebullets);
+    compactActive(state.missiles);
+    compactActive(state.beams);
+    compactActive(state.enemies);
+    compactActive(state.pickups);
+    compactActive(state.parts);
+    compactActive(state.bombEffects);
   }
 
   function bomb() {
@@ -760,6 +826,39 @@ export function createGame(canvas, data, deps = {}) {
     return true;
   }
 
+  function buyArmoryNode(id) {
+    armAudio();
+    const result = armory.buy(id);
+    if (!result.ok) {
+      const messages = { locked: '需要先完成前置节点', exclusive: '本路线另一分支已锁定', coins: '晶币不足', maxed: '该节点已满级', unknown: '未知军械节点' };
+      if (ui) ui.toast(messages[result.reason] || '无法购买');
+      return false;
+    }
+    refreshArmoryEffects();
+    unlock('armory:' + id);
+    if (result.node.effects && result.node.effects.unlock) {
+      unlock('weapon:' + result.node.effects.unlock);
+      state.activeWeapon = result.node.effects.unlock;
+    }
+    audio.beep(720, 0.07);
+    if (ui) ui.toast(result.node.name + ' 已升级');
+    return true;
+  }
+
+  function respecArmoryRoute(routeId) {
+    armAudio();
+    const result = armory.respecRoute(routeId);
+    if (!result.ok) {
+      const messages = { combat: '作战中不能重置路线', empty: '该路线尚未投入晶币' };
+      if (ui) ui.toast(messages[result.reason] || '无法重置路线');
+      return false;
+    }
+    refreshArmoryEffects();
+    if (!weaponUnlocked(state.activeWeapon)) state.activeWeapon = 'cannon';
+    if (ui) ui.toast('路线已重置，返还 ￥' + result.refund + '，手续费 ￥' + result.fee);
+    return true;
+  }
+
   function openBlindBox(price) {
     const pct = U.rand(0.10, 2.00);
     const payout = Math.max(1, Math.round(price * pct));
@@ -788,7 +887,7 @@ export function createGame(canvas, data, deps = {}) {
         const hitRadius = fx.radius + enemy.radius;
         if (U.distanceSq(enemy, fx) > hitRadius * hitRadius) return;
         enemy.bombHit = fx.id;
-        const mul = enemy.type === 'boss' ? 0.38 : enemy.type === 'elite' ? 0.65 : 1;
+        const mul = enemy.role === 'boss' ? 0.38 : enemy.type === 'elite' ? 0.65 : 1;
         enemy.hp -= Math.max(1, Math.round(bombDamage() * mul));
         enemy.emp = Math.max(enemy.emp || 0, bombEmpDuration());
         emitParts(enemy.x, enemy.y, '#ff4fd8', enemy.type === 'boss' ? 12 : 8);
@@ -867,9 +966,11 @@ export function createGame(canvas, data, deps = {}) {
     setUI: function (nextUI) { ui = nextUI; },
     start: function () { if (!raf) raf = requestAnimationFrame(frame); },
     restart: function () { reset(false); },
-    primary, togglePause, beginOverlay, endOverlay, bomb, buy, level, cost, full, setShip, setWeapon, useItem,
+    primary, togglePause, beginOverlay, endOverlay, bomb, buy, buyArmoryNode, respecArmoryRoute,
+    level, cost, full, setShip, setWeapon, useItem,
     unlocked: function (key) { return !!state.unlocked[key]; },
     buffs, view,
+    armoryView: function () { refreshArmoryEffects(); return armory.view(); },
     muted: audio.muted,
     toggleMute: audio.toggle
   };

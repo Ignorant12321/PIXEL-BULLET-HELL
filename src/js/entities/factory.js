@@ -1,4 +1,4 @@
-import { getWaveDifficulty } from '../data/acts/act-01/difficulty.js';
+import { getWaveDifficulty } from '../data/difficulty.js';
 
 function getShip(state, data) {
   const ships = data.starships || [];
@@ -41,13 +41,15 @@ export function createEnemy(type, state, data, U) {
   const enemyData = data.enemies[type] || data.enemies.raider;
   const diff = difficultyFor(type, state, data);
   const hasGun = !!enemyData.fireEvery;
+  const bossLike = enemyData.role === 'boss';
   const hp = Math.max(1, Math.round(enemyData.hp * (diff.hp || 1)));
   const speed = enemyData.speed * (diff.speed || 1);
   const attack = diff.attack || 1;
   return {
     type,
-    x: type === 'boss' ? -90 : -32,
-    y: type === 'boss' ? state.h * 0.5 : U.rand(78, state.h - 70),
+    role: enemyData.role || 'normal',
+    x: bossLike ? -90 : -32,
+    y: bossLike ? state.h * 0.5 : U.rand(78, state.h - 70),
     vx: speed * U.rand(0.92, 1.12),
     vy: U.rand(-12, 12),
     radius: enemyData.radius,
@@ -62,9 +64,11 @@ export function createEnemy(type, state, data, U) {
     fireTimer: hasGun ? U.rand(0.4, 1.6) : Infinity,
     color: enemyData.color,
     icon: enemyData.icon,
+    ability: enemyData.ability || null,
+    abilityState: {},
     emp: 0,
     bombHit: 0,
-    stopX: type === 'boss' ? Math.min(state.w * 0.48, state.base.x - 240) : null,
+    stopX: bossLike ? Math.min(state.w * 0.48, state.base.x - 240) : null,
     wobble: U.rand(0, Math.PI * 2),
     active: true
   };
