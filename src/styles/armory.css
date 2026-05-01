@@ -222,31 +222,31 @@
   background: rgba(5, 11, 28, 0.94);
 }
 
-.armory-subnav button {
+.armory-route-tab {
   min-width: 108px;
-  height: 42px;
+  height: 32px;
   display: grid;
   align-content: center;
-  gap: 2px;
-  padding: 5px 10px;
+  padding: 0 10px;
   border-color: rgba(86, 246, 255, 0.20);
-  background: rgba(20, 30, 66, 0.72);
-  box-shadow: none;
+  background: rgba(3, 8, 20, 0.64);
+  box-shadow: inset 0 -2px 0 rgba(86, 246, 255, 0.14);
   text-align: left;
 }
 
-.armory-subnav button.active {
-  border-color: rgba(86, 246, 255, 0.76);
-  background: linear-gradient(90deg, rgba(86, 246, 255, 0.30), rgba(115, 255, 154, 0.14));
+.armory-route-tab.active {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #041018;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28), 0 0 12px rgba(86, 246, 255, 0.22);
+}
+
+.armory-route-tab.active span,
+.armory-route-tab.active small {
   color: #041018;
 }
 
-.armory-subnav button.active span,
-.armory-subnav button.active small {
-  color: #041018;
-}
-
-.armory-subnav span {
+.armory-route-tab span {
   overflow: hidden;
   color: var(--text);
   text-overflow: ellipsis;
@@ -332,19 +332,67 @@
 .armory-tree {
   position: relative;
   min-height: 430px;
+  max-height: max(430px, calc(100vh - 260px));
   padding: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
+  cursor: grab;
+  scrollbar-color: rgba(86, 246, 255, 0.55) rgba(3, 8, 20, 0.74);
   background:
     linear-gradient(90deg, rgba(86, 246, 255, 0.055) 1px, transparent 1px),
     linear-gradient(180deg, rgba(86, 246, 255, 0.045) 1px, transparent 1px);
   background-size: 26px 26px;
 }
 
+.armory-tree.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.armory-tree-canvas {
+  position: relative;
+  min-width: 720px;
+  min-height: 760px;
+  margin: 0 96px 120px;
+}
+
+.armory-tree-nav {
+  position: sticky;
+  top: 10px;
+  bottom: 10px;
+  left: 100%;
+  z-index: 5;
+  width: max-content;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(86, 246, 255, 0.18);
+  background: rgba(3, 8, 20, 0.78);
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.24);
+}
+
+.armory-tree-nav button {
+  width: 28px;
+  min-width: 28px;
+  height: 26px;
+  padding: 0;
+  border-color: rgba(86, 246, 255, 0.22);
+  background: rgba(86, 246, 255, 0.07);
+  color: var(--cyan);
+  box-shadow: none;
+  font-size: 13px;
+}
+
+.armory-tree-nav button:hover {
+  background: var(--cyan);
+  color: #041018;
+}
+
 .armory-links {
   position: absolute;
-  inset: 12px;
-  width: calc(100% - 24px);
-  height: calc(100% - 24px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -361,8 +409,8 @@
   left: calc(var(--x) * 1%);
   top: calc(var(--y) * 1%);
   z-index: 1;
-  width: clamp(190px, 23%, 250px);
-  min-height: 112px;
+  width: clamp(168px, 21%, 224px);
+  min-height: 96px;
   transform: translate(-50%, -50%);
   backdrop-filter: blur(4px);
 }
@@ -437,7 +485,44 @@
 
 .armory-tree-node footer button {
   width: auto;
-  min-width: 54px;
+  min-width: 46px;
+}
+
+.armory-node-action {
+  justify-self: end;
+  width: auto;
+  display: inline-flex;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 3px;
+  border: 1px solid rgba(86, 246, 255, 0.16);
+  background: rgba(3, 8, 20, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.armory-node-price {
+  min-width: 0;
+  padding: 0 5px;
+  color: var(--yellow);
+  font-size: 11px;
+  line-height: 22px;
+}
+
+.armory-node-action button {
+  height: 22px;
+  padding: 0 7px;
+  border-color: rgba(115, 255, 154, 0.32);
+  background: rgba(115, 255, 154, 0.10);
+  color: var(--green);
+  box-shadow: none;
+  font-size: 11px;
+}
+
+.armory-node-action button:hover:not(:disabled) {
+  background: var(--green);
+  border-color: var(--green);
+  color: #041018;
+  box-shadow: none;
 }
 
 @media (max-width: 980px) {
@@ -447,6 +532,7 @@
 
   .armory-tree {
     min-height: 430px;
+    min-width: 720px;
   }
 
   .armory-tree-node {
@@ -458,6 +544,7 @@
   .armory-tree {
     display: grid;
     gap: 8px;
+    min-width: 0;
     min-height: 0;
     overflow: visible;
   }
@@ -471,5 +558,13 @@
     width: auto;
     min-height: 0;
     transform: none;
+  }
+
+  .armory-tree-canvas {
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
   }
 }

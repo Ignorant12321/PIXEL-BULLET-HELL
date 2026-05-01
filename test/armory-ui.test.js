@@ -66,7 +66,24 @@ test('armoryTreeLayout returns tiered nodes, connector edges, and compact reset 
   }));
 });
 
-test('armoryRouteTabs exposes a second-level route menu with core as default', function () {
+test('armoryTreeLayout gives branch nodes more vertical breathing room', function () {
+  const layout = armoryTreeLayout({
+    routes,
+    levels: { 'a-root': 1, 'a-left': 0, 'a-right': 0 },
+    coins: 999,
+    phase: 'intermission'
+  });
+  const alpha = layout.find(function (group) { return group.routeId === 'alpha'; });
+  const branchYs = alpha.nodes
+    .filter(function (node) { return node.tier === 2; })
+    .map(function (node) { return node.y; })
+    .sort(function (a, b) { return a - b; });
+
+  assert.equal(branchYs[0] <= 16, true);
+  assert.equal(branchYs[1] >= 84, true);
+});
+
+test('armoryRouteTabs exposes only real routes with no overview tab', function () {
   const view = {
     routes,
     levels: { 'a-root': 1, 'b-root': 2 },
@@ -75,14 +92,13 @@ test('armoryRouteTabs exposes a second-level route menu with core as default', f
   };
   const tabs = armoryRouteTabs(view, 'missing');
 
-  assert.deepEqual(tabs.map(function (tab) { return tab.id; }), ['overview', 'alpha', 'beta']);
-  assert.equal(tabs[0].name, '概览');
-  assert.equal(tabs[1].spent, 50);
-  assert.equal(tabs[2].spent, 60);
-  assert.equal(tabs[1].active, true);
+  assert.deepEqual(tabs.map(function (tab) { return tab.id; }), ['alpha', 'beta']);
+  assert.equal(tabs[0].spent, 50);
+  assert.equal(tabs[1].spent, 60);
+  assert.equal(tabs[0].active, true);
 });
 
-test('armoryRouteSelection shows one tree at a time and reserves overview for compact cards', function () {
+test('armoryRouteSelection always shows one route tree and normalizes overview to the first route', function () {
   const view = {
     routes,
     levels: { 'a-root': 1, 'b-root': 2 },
@@ -95,7 +111,7 @@ test('armoryRouteSelection shows one tree at a time and reserves overview for co
   assert.equal(selected.mode, 'tree');
   assert.equal(selected.activeRouteId, 'beta');
   assert.deepEqual(selected.groups.map(function (group) { return group.routeId; }), ['beta']);
-  assert.equal(overview.mode, 'overview');
-  assert.equal(overview.groups.length, 2);
-  assert.equal(overview.groups.every(function (group) { return group.compact === true; }), true);
+  assert.equal(overview.mode, 'tree');
+  assert.equal(overview.activeRouteId, 'alpha');
+  assert.deepEqual(overview.groups.map(function (group) { return group.routeId; }), ['alpha']);
 });

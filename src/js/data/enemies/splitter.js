@@ -1,10 +1,10 @@
 const splitter = {
   role: 'normal',
   name: '分裂载体',
-  hp: 30,
-  speed: 52,
+  hp: 28,
+  speed: 40,
   radius: 15,
-  reward: 13,
+  reward: 12,
   damage: 12,
   baseDamage: 14,
   bulletDamage: 0,

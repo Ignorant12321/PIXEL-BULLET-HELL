@@ -100,3 +100,11 @@ Star War/
 - 想调第几波的难度倍率：看 `src/js/data/acts/act-01/difficulty.js` 和 `src/js/data/acts/act-02/difficulty.js`，里面按 `wave01` 到 `wave10` 分开了。
 - 想改画面表现：看 `src/js/render/renderer.js` 和 `src/styles/app.css`。
 - 想改界面交互：看 `src/js/ui/ui.js` 和 `src/js/systems/input.js`。
+
+## 更多文档
+
+- [快速上手](docs/getting-started.md)：运行、操作、玩法、测试和常见问题。
+- [项目结构说明](docs/project-structure.md)：入口链路、目录职责和模块定位。
+- [修改和扩展指南](docs/modding-guide.md)：新增星舰、敌人、掉落、升级、军械库和关卡幕。
+- [开发流程建议](docs/development-workflow.md)：修改项目时的推荐流程、调试方式和检查清单。
+- [波次配置系统说明](docs/wave-system.md)：如何调整每一波的敌人、出现时间、随机顺序和整体难度。

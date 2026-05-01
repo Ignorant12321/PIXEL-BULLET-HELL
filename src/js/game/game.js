@@ -13,6 +13,7 @@ import { createCombatSelectors } from './selectors.js';
 import { hasTargetInRange as hasTarget, nearestTargetInRange as nearestTarget } from './targets.js';
 import { compactActive } from './collections.js';
 import { applyEnemyAbility } from './enemy-abilities.js';
+import { applyShipEvent } from './ship-abilities.js';
 
 export function createGame(canvas, data, deps = {}) {
   const ctx = canvas.getContext('2d');
@@ -247,11 +248,11 @@ export function createGame(canvas, data, deps = {}) {
     state.bullets = []; state.missiles = []; state.beams = []; state.pickups = []; state.bombEffects = [];
     stagePlayerAtBase();
     state.phase = 'playing';
-    const shieldBonus = ship.shieldAtWave || 0;
-    if (level('shield') > 0 || shieldBonus > 0) {
-      state.buff.shield = Math.max(state.buff.shield, 4 + level('shield') * 2 + shieldBonus * 2);
-      state.shieldCharges = Math.max(state.shieldCharges, 1 + Math.max(0, shieldBonus - 1));
+    if (level('shield') > 0) {
+      state.buff.shield = Math.max(state.buff.shield, 4 + level('shield') * 2);
+      state.shieldCharges = Math.max(state.shieldCharges, 1);
     }
+    applyShipEvent('waveStart', { ship, state, shieldLevel: level('shield') });
     audio.beep(520, 0.08, 'triangle');
     if (ui) ui.toast(wave.actName + ' 第 ' + wave.wave + ' 波开始：' + wave.kind);
   }

@@ -9,7 +9,9 @@ const ranger = {
   range: 455,
   fireRate: -0.03,
   bombs: 3,
-  coinBonus: 0.08,
+  abilities: [
+    { type: "coinBonus", value: 0.08 }
+  ],
   color: "#ffe66d",
   special: "射程更远，初始歼灭弹 +1，击杀晶币收益 +8%。",
   brief: "长射程 / 高收益 / 稳定输出"

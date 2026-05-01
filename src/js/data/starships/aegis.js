@@ -9,8 +9,10 @@ const aegis = {
   range: 330,
   fireRate: -0.08,
   bombs: 2,
-  shieldAtWave: 1,
-  baseArmor: 0.16,
+  abilities: [
+    { type: "waveShield", value: 1 },
+    { type: "baseArmor", value: 0.16 }
+  ],
   color: "#8fb7ff",
   special: "生命与基地减伤更强，每波获得护盾，适合第二幕高压波次。",
   brief: "高生命 / 高减伤 / 低机动"

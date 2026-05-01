@@ -1,10 +1,10 @@
 const scout = {
   role: "normal",
   name: "侦察蜂群",
-  hp: 8,
-  speed: 92,
+  hp: 7,
+  speed: 78,
   radius: 10,
-  reward: 5,
+  reward: 4,
   damage: 6,
   baseDamage: 8,
   bulletDamage: 0,

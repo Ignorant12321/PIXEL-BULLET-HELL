@@ -1,8 +1,16 @@
 import { renderTabs } from './dom.js';
 
+export function initialCodexTab(tabs) {
+  return (tabs && tabs[0] && tabs[0].id) || '';
+}
+
+export function codexItemsForTab(codex, tabId) {
+  return (codex || []).filter(function (item) { return item.category === tabId; });
+}
+
 export function createCodexPanel(game, data, U, elements) {
   const e = elements;
-  let tab = 'all';
+  let tab = initialCodexTab(data.codexTabs);
   let dirty = true;
 
   function markDirty() {
@@ -18,7 +26,7 @@ export function createCodexPanel(game, data, U, elements) {
       render();
     }, U);
 
-    const items = data.codex.filter(function (item) { return tab === 'all' || item.category === tab; });
+    const items = codexItemsForTab(data.codex, tab);
     e.codexGrid.innerHTML = items.map(function (item) {
       const open = game.unlocked(item.unlock);
       return [

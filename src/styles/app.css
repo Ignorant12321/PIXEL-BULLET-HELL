@@ -796,9 +796,32 @@ button:focus-visible {
 .brief p { margin-bottom: 12px; }
 .ship-select {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: stretch;
   gap: 8px;
   margin: 0 0 12px;
+}
+.ship-select-page {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ship-page-btn {
+  min-width: 34px;
+  width: 34px;
+  min-height: 112px;
+  padding: 0;
+  border-color: rgba(86, 246, 255, 0.24);
+  background: rgba(3, 8, 20, 0.58);
+  box-shadow: none;
+  color: var(--cyan);
+  font-size: 24px;
+  line-height: 1;
+}
+.ship-page-btn:hover {
+  background: rgba(86, 246, 255, 0.16);
+  color: var(--yellow);
 }
 .ship-card {
   min-width: 0;
@@ -885,7 +908,7 @@ button:focus-visible {
 @media (max-width: 1040px) {
   .topbar { grid-template-columns: 210px minmax(300px, 1fr); }
   .ministats { grid-template-columns: repeat(3, 1fr); }
-  .ship-select { grid-template-columns: 1fr; }
+  .ship-select { grid-template-columns: 30px minmax(0, 1fr) 30px; }
   .ship-card { min-height: 86px; grid-template-columns: 44px 1fr; grid-template-rows: auto auto auto; justify-items: start; text-align: left; }
   .ship-card .pix { grid-row: 1 / 4; }
 }
@@ -1339,10 +1362,7 @@ button:focus-visible {
   width: min(760px, 92%);
 }
 .ship-select {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   max-height: min(390px, 44vh);
-  overflow: auto;
-  padding-right: 2px;
 }
 .ship-card {
   min-height: 112px;
@@ -1384,6 +1404,6 @@ button:focus-visible {
     border-bottom: 0;
   }
   .ship-select {
-    grid-template-columns: 1fr;
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
   }
 }

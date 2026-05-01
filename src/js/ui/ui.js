@@ -2,6 +2,11 @@ import { $, safeRatio } from './dom.js';
 import { buildHudReadouts } from './hud-view.js';
 import { createShopPanel } from './shop.js';
 import { createCodexPanel } from './codex.js';
+import {
+  nextShipSelectPage,
+  shipSelectPageForSelection,
+  visibleShipPage
+} from './ship-select-view.js';
 
 export function createUI(game, data, U) {
   const e = {
@@ -30,7 +35,7 @@ export function createUI(game, data, U) {
 
   const st = {
     modal: null, toastTimer: 0,
-    shipKey: '', weaponKey: '', itemKey: '', buffKey: '', hudKey: ''
+    shipKey: '', shipPage: 0, shipPageShipId: '', weaponKey: '', itemKey: '', buffKey: '', hudKey: ''
   };
 
   const shopPanel = createShopPanel(game, data, U, e, {
@@ -79,10 +84,17 @@ export function createUI(game, data, U) {
       return;
     }
     e.shipSelect.classList.remove('hidden');
-    const key = view.shipId + ':' + (data.starships || []).length;
+    const ships = data.starships || [];
+    if (st.shipPageShipId !== view.shipId) {
+      st.shipPage = shipSelectPageForSelection(ships, view.shipId);
+      st.shipPageShipId = view.shipId;
+    }
+    const page = visibleShipPage(ships, st.shipPage);
+    st.shipPage = page.page;
+    const key = view.shipId + ':' + ships.length + ':' + page.page;
     if (st.shipKey === key && e.shipSelect.innerHTML) return;
     st.shipKey = key;
-    e.shipSelect.innerHTML = (data.starships || []).map(function (ship) {
+    const cards = page.ships.map(function (ship) {
       const selected = ship.id === view.shipId;
       return [
         '<button type="button" class="ship-card ' + (selected ? 'selected' : '') + '" data-ship="' + ship.id + '" title="' + U.escapeHtml(ship.special) + '">',
@@ -93,10 +105,25 @@ export function createUI(game, data, U) {
         '</button>'
       ].join('');
     }).join('');
+    e.shipSelect.innerHTML = [
+      '<button type="button" class="ship-page-btn" data-ship-page="-1" aria-label="上一页" title="上一页">‹</button>',
+      '<div class="ship-select-page" aria-label="星舰第 ' + (page.page + 1) + ' 页，共 ' + page.pageCount + ' 页">',
+      cards,
+      '</div>',
+      '<button type="button" class="ship-page-btn" data-ship-page="1" aria-label="下一页" title="下一页">›</button>'
+    ].join('');
+    e.shipSelect.querySelectorAll('[data-ship-page]').forEach(function (btn) {
+      btn.onclick = function () {
+        st.shipPage = nextShipSelectPage(ships, st.shipPage, Number(btn.dataset.shipPage) || 0);
+        st.shipKey = '';
+        renderShipSelect(game.view());
+      };
+    });
     e.shipSelect.querySelectorAll('[data-ship]').forEach(function (btn) {
       btn.onclick = function () {
         if (game.setShip(btn.dataset.ship)) {
           st.shipKey = '';
+          st.shipPageShipId = '';
           renderShipInfo(game.view());
           update();
         }

@@ -49,3 +49,14 @@ test('armory exposes all planned attack routes', function () {
     assert.equal(routeIds.has(routeId), true, 'missing route ' + routeId);
   });
 });
+
+test('weapon routes unlock their matching weapon from the starter node', function () {
+  ['cannon', 'sniper', 'beam', 'missile', 'drone'].forEach(function (routeId) {
+    const starter = data.armoryRoutes.find(function (node) {
+      return node.routeId === routeId && node.tier === 1;
+    });
+
+    assert.ok(starter, routeId + ' starter exists');
+    assert.equal(starter.effects.unlock, routeId, routeId + ' starter unlocks matching weapon');
+  });
+});

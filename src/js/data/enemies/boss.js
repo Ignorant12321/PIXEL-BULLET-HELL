@@ -1,8 +1,8 @@
 const boss = {
   role: "boss",
   name: "星环镇压者",
-  hp: 560,
-  speed: 19,
+  hp: 600,
+  speed: 14,
   radius: 38,
   reward: 120,
   damage: 36,

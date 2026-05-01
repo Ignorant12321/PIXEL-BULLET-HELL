@@ -22,7 +22,6 @@ export function createShopPanel(game, data, U, elements, callbacks) {
     e.shopCoin.textContent = U.num(view.coins);
     renderTabs(e.shopTabs, data.shopTabs, tab, function (nextTab) {
       tab = nextTab;
-      if (contentModeForTab(tab) === 'armory' && armoryRoute === 'overview') armoryRoute = 'core';
       dirty = true;
       render();
     }, U);
@@ -84,12 +83,14 @@ export function createShopPanel(game, data, U, elements, callbacks) {
     const subnav = [
       '<nav class="armory-subnav" aria-label="军械库路线">',
       selection.tabs.map(function (item) {
-        return '<button type="button" class="' + (item.active ? 'active' : '') + '" data-armory-route-tab="' + item.id + '">' +
-          '<span>' + U.escapeHtml(item.name) + '</span><small>￥' + U.num(item.spent) + '</small></button>';
+        return '<button type="button" class="armory-route-tab' + (item.active ? ' active' : '') + '" data-armory-route-tab="' + item.id + '">' +
+          '<span>' + U.escapeHtml(item.name) + '</span></button>';
       }).join(''),
       '</nav>'
     ].join('');
-    const body = selection.mode === 'overview' ? renderArmoryOverview(selection.groups) : selection.groups.map(renderArmoryRoute).join('');
+    const body = selection.mode === 'overview' ? renderArmoryOverview(selection.groups) : selection.groups.map(function (group) {
+      return renderArmoryRoute(group, armory);
+    }).join('');
     e.shopGrid.innerHTML = subnav + '<div class="armory-content ' + selection.mode + '">' + body + '</div>';
 
     e.shopGrid.querySelectorAll('[data-armory-route-tab]').forEach(function (btn) {
@@ -117,6 +118,13 @@ export function createShopPanel(game, data, U, elements, callbacks) {
         }
       };
     });
+    bindArmoryDragScroll();
+    e.shopGrid.querySelectorAll('[data-armory-pan]').forEach(function (btn) {
+      btn.onclick = function () {
+        const tree = btn.closest('[data-armory-dragscroll]');
+        if (tree) panArmoryTree(tree, btn.dataset.armoryPan);
+      };
+    });
     e.shopGrid.querySelectorAll('[data-respec-route]').forEach(function (btn) {
       btn.onclick = function () {
         if (game.respecArmoryRoute(btn.dataset.respecRoute)) {
@@ -124,6 +132,47 @@ export function createShopPanel(game, data, U, elements, callbacks) {
           if (cb.onBought) cb.onBought();
           render();
         }
+      };
+    });
+  }
+
+  function panArmoryTree(tree, dir) {
+    const maxLeft = Math.max(0, tree.scrollWidth - tree.clientWidth);
+    const maxTop = Math.max(0, tree.scrollHeight - tree.clientHeight);
+    const target = {
+      left: dir === 'left' ? 0 : dir === 'right' ? maxLeft : dir === 'center' ? Math.round(maxLeft / 2) : tree.scrollLeft,
+      top: dir === 'top' ? 0 : dir === 'bottom' ? maxTop : dir === 'center' ? Math.round(maxTop / 2) : tree.scrollTop
+    };
+    tree.scrollTo(Object.assign({ behavior: 'smooth' }, target));
+  }
+
+  function bindArmoryDragScroll() {
+    e.shopGrid.querySelectorAll('[data-armory-dragscroll]').forEach(function (tree) {
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let left = 0;
+      let top = 0;
+      tree.onpointerdown = function (ev) {
+        if (ev.button !== 0 || ev.target.closest('.armory-tree-node, button')) return;
+        dragging = true;
+        startX = ev.clientX;
+        startY = ev.clientY;
+        left = tree.scrollLeft;
+        top = tree.scrollTop;
+        tree.classList.add('dragging');
+        tree.setPointerCapture(ev.pointerId);
+      };
+      tree.onpointermove = function (ev) {
+        if (!dragging) return;
+        tree.scrollLeft = left - (ev.clientX - startX);
+        tree.scrollTop = top - (ev.clientY - startY);
+      };
+      tree.onpointerup = tree.onpointercancel = function (ev) {
+        if (!dragging) return;
+        dragging = false;
+        tree.classList.remove('dragging');
+        try { tree.releasePointerCapture(ev.pointerId); } catch (_) {}
       };
     });
   }
@@ -146,7 +195,7 @@ export function createShopPanel(game, data, U, elements, callbacks) {
     ].join('');
   }
 
-  function renderArmoryRoute(group) {
+  function renderArmoryRoute(group, armory) {
       const edgeMarkup = group.edges.map(function (edge) {
         const mid = (edge.x1 + edge.x2) / 2;
         return '<path d="M ' + edge.x1.toFixed(2) + ' ' + edge.y1.toFixed(2) + ' C ' + mid.toFixed(2) + ' ' + edge.y1.toFixed(2) + ', ' + mid.toFixed(2) + ' ' + edge.y2.toFixed(2) + ', ' + edge.x2.toFixed(2) + ' ' + edge.y2.toFixed(2) + '" />';
@@ -155,7 +204,15 @@ export function createShopPanel(game, data, U, elements, callbacks) {
         '<section class="armory-tree-route">',
         '<header><div><h3>' + U.escapeHtml(group.name) + '</h3><p>已投入 ￥' + U.num(group.spent) + '</p></div>',
         '<button class="route-reset" data-respec-route="' + group.routeId + '" title="' + U.escapeHtml(group.resetAction.title) + '"' + (group.resetAction.disabled ? ' disabled' : '') + ' aria-label="' + U.escapeHtml(group.name + group.resetAction.title) + '">' + group.resetAction.label + '</button></header>',
-        '<div class="armory-tree" style="--tier-count:' + Math.max(1, group.tiers.length) + '">',
+        '<div class="armory-tree" data-armory-dragscroll style="--tier-count:' + Math.max(1, group.tiers.length) + '">',
+        '<nav class="armory-tree-nav" aria-label="树图定位">',
+        '<button type="button" data-armory-pan="top" title="顶部">↑</button>',
+        '<button type="button" data-armory-pan="left" title="左侧">←</button>',
+        '<button type="button" data-armory-pan="center" title="居中">◎</button>',
+        '<button type="button" data-armory-pan="right" title="右侧">→</button>',
+        '<button type="button" data-armory-pan="bottom" title="底部">↓</button>',
+        '</nav>',
+        '<div class="armory-tree-canvas">',
         '<svg class="armory-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + edgeMarkup + '</svg>',
         group.nodes.map(function (node) {
           const lv = (armory.levels && armory.levels[node.id]) || 0;
@@ -166,11 +223,11 @@ export function createShopPanel(game, data, U, elements, callbacks) {
             '<div class="armory-node-icon">' + U.icon(node.icon, data.icons) + '</div>',
             '<div><h4>' + U.escapeHtml(node.name) + '</h4><p>' + U.escapeHtml(node.desc) + '</p>',
             '<small>Tier ' + node.tier + (node.branch ? ' · ' + U.escapeHtml(node.branch) : '') + ' · Lv ' + lv + '/' + node.max + '</small></div>',
-            '<footer><span>￥ ' + U.num(node.cost) + '</span><button data-armory-buy="' + node.id + '"' + (state !== 'available' ? ' disabled' : '') + '>' + label + '</button></footer>',
+            '<footer class="armory-node-action"><span class="armory-node-price">￥' + U.num(node.cost) + '</span><button data-armory-buy="' + node.id + '"' + (state !== 'available' ? ' disabled' : '') + '>' + label + '</button></footer>',
             '</article>'
           ].join('');
         }).join(''),
-        '</div></section>'
+        '</div></div></section>'
       ].join('');
   }
 

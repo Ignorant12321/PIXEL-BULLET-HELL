@@ -6,7 +6,6 @@ export const shopTabs = [
 ];
 
 export const codexTabs = [
-  { id: 'all', name: '全部' },
   { id: 'monster', name: '怪物' },
   { id: 'weapon', name: '武器' },
   { id: 'forge', name: '锻造' },

@@ -9,7 +9,9 @@ const weaver = {
   range: 350,
   fireRate: 0.26,
   bombs: 2,
-  coinBonus: 0.04,
+  abilities: [
+    { type: "coinBonus", value: 0.04 }
+  ],
   color: "#a7ff6d",
   special: "射速与机动更高，晶币收益略升，适合弹幕、射线和僚机路线。",
   brief: "高射速 / 高机动 / 轻收益"

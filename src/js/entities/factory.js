@@ -1,4 +1,5 @@
 import { getWaveDifficulty } from '../data/difficulty.js';
+import { shipEffects } from '../game/ship-abilities.js';
 
 function getShip(state, data) {
   const ships = data.starships || [];
@@ -15,6 +16,7 @@ function difficultyFor(type, state, data) {
 
 export function createPlayer(state, data, U) {
   const ship = getShip(state, data);
+  const effects = shipEffects(ship);
   return {
     x: U.clamp(state.base.x - 86, 36, state.base.x - 54),
     y: state.h * 0.52,
@@ -28,8 +30,8 @@ export function createPlayer(state, data, U) {
     fireRateBonus: ship.fireRate || 0,
     baseRange: ship.range || 360,
     speed: ship.speed || 250,
-    baseArmor: ship.baseArmor || 0,
-    coinBonus: ship.coinBonus || 0,
+    baseArmor: effects.baseArmor,
+    coinBonus: effects.coinBonus,
     inv: 1.2,
     shootTimer: 0,
     missileTimer: 0,

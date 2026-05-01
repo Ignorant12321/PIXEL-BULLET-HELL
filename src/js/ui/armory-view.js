@@ -40,7 +40,6 @@ function defaultRouteId(groups) {
 }
 
 function normalizeRouteId(groups, routeId) {
-  if (routeId === 'overview') return 'overview';
   if (groups.some(function (group) { return group.routeId === routeId; })) return routeId;
   return defaultRouteId(groups);
 }
@@ -48,20 +47,14 @@ function normalizeRouteId(groups, routeId) {
 export function armoryRouteTabs(view, selectedRouteId) {
   const groups = armoryRouteSummary(view);
   const activeRouteId = normalizeRouteId(groups, selectedRouteId);
-  const totalSpent = groups.reduce(function (sum, group) { return sum + group.spent; }, 0);
-  return [{
-    id: 'overview',
-    name: '概览',
-    spent: totalSpent,
-    active: activeRouteId === 'overview'
-  }].concat(groups.map(function (group) {
+  return groups.map(function (group) {
     return {
       id: group.routeId,
       name: group.name,
       spent: group.spent,
       active: group.routeId === activeRouteId
     };
-  }));
+  });
 }
 
 function laneFor(node) {
@@ -79,7 +72,7 @@ export function armoryTreeLayout(view) {
       return Object.assign({}, node, {
         lane,
         x: maxTier <= 1 ? 50 : ((node.tier - 1) / (maxTier - 1)) * 72 + 14,
-        y: lane === 0 ? 50 : lane < 0 ? 24 : 76,
+        y: lane === 0 ? 50 : lane < 0 ? 16 : 84,
         level: Number((view.levels || {})[node.id]) || 0,
         state: nodeState(node, view.levels || {}, view.coins || 0)
       });
@@ -98,7 +91,7 @@ export function armoryTreeLayout(view) {
       tier.nodes.sort(function (a, b) { return a.lane - b.lane || a.id.localeCompare(b.id); });
       if (tier.nodes.length > 1) {
         tier.nodes.forEach(function (node, idx) {
-          node.y = 22 + (idx / (tier.nodes.length - 1)) * 56;
+          node.y = 16 + (idx / (tier.nodes.length - 1)) * 68;
         });
       }
     });
@@ -136,24 +129,6 @@ export function armoryRouteSelection(view, selectedRouteId) {
   const groups = armoryTreeLayout(view);
   const activeRouteId = normalizeRouteId(groups, selectedRouteId);
   const tabs = armoryRouteTabs(view, activeRouteId);
-  if (activeRouteId === 'overview') {
-    return {
-      mode: 'overview',
-      activeRouteId,
-      tabs,
-      groups: groups.map(function (group) {
-        const purchased = group.nodes.reduce(function (sum, node) { return sum + node.level; }, 0);
-        const total = group.nodes.reduce(function (sum, node) { return sum + node.max; }, 0);
-        const available = group.nodes.filter(function (node) { return node.state === 'available'; }).length;
-        return Object.assign({}, group, {
-          compact: true,
-          purchased,
-          total,
-          available
-        });
-      })
-    };
-  }
   return {
     mode: 'tree',
     activeRouteId,

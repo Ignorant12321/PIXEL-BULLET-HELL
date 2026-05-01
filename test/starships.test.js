@@ -20,3 +20,28 @@ test('starship roster includes six distinct selectable models with icons', funct
     assert.equal(typeof ship.brief, 'string', ship.id + ' brief');
   });
 });
+
+test('starship special mechanics are declared as ability data', function () {
+  const byId = Object.fromEntries(data.starships.map(function (ship) { return [ship.id, ship]; }));
+
+  assert.deepEqual(byId.guard.abilities, [
+    { type: 'waveShield', value: 1 },
+    { type: 'baseArmor', value: 0.1 }
+  ]);
+  assert.deepEqual(byId.ranger.abilities, [
+    { type: 'coinBonus', value: 0.08 }
+  ]);
+  assert.deepEqual(byId.weaver.abilities, [
+    { type: 'coinBonus', value: 0.04 }
+  ]);
+  assert.deepEqual(byId.aegis.abilities, [
+    { type: 'waveShield', value: 1 },
+    { type: 'baseArmor', value: 0.16 }
+  ]);
+
+  data.starships.forEach(function (ship) {
+    assert.equal(Object.hasOwn(ship, 'shieldAtWave'), false, ship.id + ' should not use legacy shieldAtWave');
+    assert.equal(Object.hasOwn(ship, 'baseArmor'), false, ship.id + ' should not use legacy baseArmor');
+    assert.equal(Object.hasOwn(ship, 'coinBonus'), false, ship.id + ' should not use legacy coinBonus');
+  });
+});

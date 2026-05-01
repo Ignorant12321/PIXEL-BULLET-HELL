@@ -1,8 +1,8 @@
 const voidMothership = {
   role: 'boss',
   name: '虚空母舰',
-  hp: 920,
-  speed: 16,
+  hp: 980,
+  speed: 13,
   radius: 44,
   reward: 180,
   damage: 46,
