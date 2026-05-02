@@ -23,14 +23,14 @@ export function createUI(game, data, U) {
     briefNext: $('briefNext'), briefShop: $('briefShop'), briefRestart: $('briefRestart'),
     start: $('startBtn'), startIcon: $('startIcon'), startLabel: $('startLabel'),
     pause: $('pauseBtn'), pauseIcon: $('pauseIcon'),
-    shop: $('shopBtn'), codex: $('codexBtn'),
+    shop: $('shopBtn'), codex: $('codexBtn'), info: $('infoBtn'),
     bombBtn: $('bombBtn'), mute: $('muteBtn'), muteText: $('muteText'),
     toast: $('toast'), layer: $('modalLayer'),
-    shopModal: $('shopModal'), codexModal: $('codexModal'),
+    shopModal: $('shopModal'), codexModal: $('codexModal'), infoModal: $('infoModal'),
     shopCoin: $('shopCoin'), shopTabs: $('shopTabs'), shopGrid: $('shopGrid'),
-    codexTabs: $('codexTabs'), codexGrid: $('codexGrid'),
+    codexTabs: $('codexTabs'), codexGrid: $('codexGrid'), infoGrid: $('infoGrid'),
     shipSelect: $('shipSelect'),
-    shopBack: $('shopBack'), codexBack: $('codexBack')
+    shopBack: $('shopBack'), codexBack: $('codexBack'), infoBack: $('infoBack')
   };
 
   const st = {
@@ -84,6 +84,7 @@ export function createUI(game, data, U) {
       return;
     }
     e.shipSelect.classList.remove('hidden');
+    e.shipSelect.classList.remove('loading');
     const ships = data.starships || [];
     if (st.shipPageShipId !== view.shipId) {
       st.shipPage = shipSelectPageForSelection(ships, view.shipId);
@@ -256,12 +257,40 @@ export function createUI(game, data, U) {
     });
   }
 
+  function renderMobileInfo(view) {
+    if (!e.infoGrid) return;
+    e.infoGrid.innerHTML = [
+      '<section class="card mobile-info-card"><div class="card-head"><h2>星舰型号</h2><span>' + U.escapeHtml(view.label) + '</span></div>',
+      e.shipInfo ? e.shipInfo.innerHTML : '',
+      '</section>',
+      '<section class="card mobile-info-card"><div class="card-head"><h2>武器</h2><span>' + U.escapeHtml(e.weaponLabel ? e.weaponLabel.textContent : '') + '</span></div>',
+      '<div class="mobile-info-readonly">' + (e.weaponDetail ? e.weaponDetail.innerHTML : '') + '</div></section>',
+      '<section class="card mobile-info-card"><div class="card-head"><h2>属性面板</h2><span>实时</span></div>',
+      '<div class="mobile-info-bars">',
+      '<div class="barrow"><span>机体生命</span><strong>' + Math.round(view.hp) + '/' + view.maxHp + '</strong></div>',
+      '<div class="meter"><i style="width:' + safeRatio(U, view.hp, view.maxHp) * 100 + '%"></i></div>',
+      '<div class="barrow"><span>基地生命</span><strong>' + Math.round(view.base) + '/' + view.maxBase + '</strong></div>',
+      '<div class="meter base"><i style="width:' + safeRatio(U, view.base, view.maxBase) * 100 + '%"></i></div>',
+      '</div>',
+      '<div class="ministats">',
+      '<div><span>伤害</span><strong>' + view.damage + '</strong></div>',
+      '<div><span>弹道</span><strong>' + view.lanes + '</strong></div>',
+      '<div><span>射速</span><strong>' + view.rate.toFixed(1) + 'x</strong></div>',
+      '<div><span>射程</span><strong>' + view.range + '</strong></div>',
+      '<div><span>歼灭弹</span><strong>' + view.bombs + '</strong></div>',
+      '</div></section>',
+      '<section class="card mobile-info-card help"><h2>提示</h2><p>移动：左下摇杆 / WASD / 方向键<br>慢速：Shift 或右下慢速键　歼灭弹：X 或右下按钮<br>商店：B　图鉴：C　暂停：P</p></section>'
+    ].join('');
+  }
+
   function showModal(type) {
     e.layer.classList.remove('hidden');
     e.shopModal.classList.toggle('hidden', type !== 'shop');
     e.codexModal.classList.toggle('hidden', type !== 'codex');
+    if (e.infoModal) e.infoModal.classList.toggle('hidden', type !== 'info');
     if (type === 'shop') { shopPanel.markDirty(); shopPanel.render(); }
-    else { codexPanel.markDirty(); codexPanel.render(); }
+    else if (type === 'codex') { codexPanel.markDirty(); codexPanel.render(); }
+    else if (type === 'info') { renderMobileInfo(game.view()); }
   }
 
   function open(type) {
@@ -277,6 +306,7 @@ export function createUI(game, data, U) {
     e.layer.classList.add('hidden');
     e.shopModal.classList.add('hidden');
     e.codexModal.classList.add('hidden');
+    if (e.infoModal) e.infoModal.classList.add('hidden');
     if (restore !== false) game.endOverlay();
   }
 
@@ -337,6 +367,7 @@ export function createUI(game, data, U) {
     renderItemTray(view);
 
     if (st.modal === 'shop') shopPanel.render();
+    if (st.modal === 'info') renderMobileInfo(view);
   }
 
   e.start.onclick = function () {
@@ -350,10 +381,12 @@ export function createUI(game, data, U) {
   e.pause.onclick = function () { game.togglePause(); };
   e.shop.onclick = function () { open('shop'); };
   e.codex.onclick = function () { open('codex'); };
+  if (e.info) e.info.onclick = function () { open('info'); };
   e.bombBtn.onclick = function () { game.bomb(); };
   e.mute.onclick = function () { game.toggleMute(); update(); };
   e.shopBack.onclick = function () { close(true); };
   e.codexBack.onclick = function () { close(true); };
+  if (e.infoBack) e.infoBack.onclick = function () { close(true); };
 
   return { update, toast, open, close, toggle };
 }

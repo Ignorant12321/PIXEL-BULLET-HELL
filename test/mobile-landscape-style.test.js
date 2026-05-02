@@ -28,7 +28,8 @@ test('mobile landscape layout prioritizes the battlefield', function () {
 
 test('mobile landscape controls stay in lower combat corners', function () {
   assert.match(css, /\.touch-controls\s*\{[\s\S]*display:\s*flex/);
-  assert.match(css, /\.touch-dpad\s*\{[\s\S]*left:\s*10px/);
+  assert.match(css, /\.touch-joystick\s*\{[\s\S]*left:\s*12px/);
+  assert.match(css, /\.touch-joystick-knob\s*\{[\s\S]*transform:\s*translate\(-50%,\s*-50%\)/);
   assert.match(css, /\.touch-actions\s*\{[\s\S]*right:\s*10px/);
   assert.match(css, /\.actions\s*\{[\s\S]*left:\s*8px/);
 });
@@ -39,4 +40,11 @@ test('mobile landscape dialogs fit low-height screens', function () {
   assert.match(css, /\.modal\s*\{[\s\S]*height:\s*calc\(100vh - 16px\)/);
   assert.match(css, /#shopModal\s*\{[\s\S]*grid-template-columns:\s*112px minmax\(0,\s*1fr\)/);
   assert.match(css, /\.armory-tree\s*\{[\s\S]*min-width:\s*680px/);
+});
+
+test('mobile landscape overlays hide combat controls and center readable panels', function () {
+  assert.match(css, /\.arena:\s*has\(\.brief:not\(\.hidden\)\)\s+\.touch-controls\s*\{[\s\S]*display:\s*none/);
+  assert.match(css, /\.app:\s*has\(\.modal-layer:not\(\.hidden\)\)\s+\.touch-controls\s*\{[\s\S]*display:\s*none/);
+  assert.match(css, /\.modal\.codex,\s*[\r\n ]+\.modal\.info\s*\{[\s\S]*place-self:\s*center/);
+  assert.match(css, /\.mobile-info-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
 });
