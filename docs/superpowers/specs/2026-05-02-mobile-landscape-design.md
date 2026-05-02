@@ -1,46 +1,46 @@
-# Mobile Landscape Design
+# 移动端横屏适配设计
 
-## Goal
+## 目标
 
-Adapt the game for touch devices that are already in landscape orientation. The priority is combat readability and control comfort: keep the canvas as large as possible, keep core HUD data visible, and prevent touch controls or dialogs from blocking the center of the battlefield.
+适配已经处于横屏方向的触屏设备。优先级是战斗可读性和操作舒适度：尽量放大战斗画布，保留核心 HUD 数据，并避免触控按钮或弹窗遮挡战场中心。
 
-## Scope
+## 范围
 
-- Add a dedicated stylesheet: `src/styles/mobile-landscape.css`.
-- Load it after `src/styles/app.css` from `index.html` so its narrow mobile-landscape overrides are easy to find and reason about.
-- Keep the existing desktop and tablet layout behavior in `app.css`.
-- Do not change game rules, canvas rendering, data, wave balance, or input semantics.
+- 新增专用样式文件：`src/styles/mobile-landscape.css`。
+- 在 `index.html` 中把它加载到 `src/styles/app.css` 之后，方便定位和理解移动端横屏覆盖规则。
+- 保留 `app.css` 中现有桌面端和平板布局行为。
+- 不修改游戏规则、Canvas 渲染、数据、波次平衡或输入语义。
 
-## Layout Design
+## 布局设计
 
-Use a narrow media query for touch landscape devices, based on coarse pointer, landscape orientation, and low viewport height.
+使用较窄的媒体查询，只命中横屏触屏设备，条件基于粗指针、横屏方向和较低视口高度。
 
-In that mode:
+在该模式下：
 
-- Reduce the app shell to a compact top HUD plus full-height arena.
-- Hide the right dock so the battlefield gets the available horizontal space.
-- Compress the top bar into one short row with the brand and four stat cards.
-- Shrink action buttons into a compact icon strip in the arena corner.
-- Keep touch controls visible, with movement on the lower left and combat actions on the lower right.
-- Move buffs and toast messages away from the touch controls.
+- 将应用外壳压缩为顶部紧凑 HUD 加满高战斗区域。
+- 隐藏右侧舰桥面板，让战场获得可用横向空间。
+- 把顶部栏压成一条短行，保留标题和四个核心状态卡。
+- 将快捷操作按钮缩成战场角落里的紧凑图标条。
+- 保持触控按钮可见，左下角放移动方向，右下角放慢速和歼灭弹。
+- 调整 Buff 和 toast 的位置，避免与触控按钮冲突。
 
-## Dialog Design
+## 弹窗设计
 
-Brief, ship selection, shop, codex, and armory dialogs must fit in low-height landscape screens.
+待命提示、星舰选择、商店、图鉴和军械库弹窗都必须适配低高度横屏屏幕。
 
-- Cap dialog height to the viewport and allow internal scrolling where needed.
-- Reduce padding, button height, and grid gaps.
-- Keep primary action buttons reachable without covering the battlefield center.
-- Keep armory trees scrollable horizontally rather than forcing them to shrink into unreadable nodes.
+- 将弹窗高度限制在视口内，并在需要时允许内部滚动。
+- 减少内边距、按钮高度和网格间距。
+- 保持主要操作按钮容易触达，同时不覆盖战场中心。
+- 军械库树保持可横向滚动，而不是强行缩小到难以阅读的节点。
 
-## Testing
+## 测试
 
-- Run the existing automated tests with `npm test`.
-- Serve the static app locally and manually inspect a landscape mobile-sized viewport.
-- Check at least one low-height viewport around `812x375` and one wider small tablet landscape viewport around `1024x600`.
+- 运行现有自动化测试：`npm test`。
+- 本地启动静态服务，手动检查移动端横屏尺寸。
+- 至少检查一个低高度视口，例如 `812x375`，以及一个更宽的小平板横屏视口，例如 `1024x600`。
 
-## Non-Goals
+## 非目标
 
-- No portrait layout redesign.
-- No new mobile-only gameplay mode.
-- No JavaScript device detection unless CSS proves insufficient.
+- 不重做竖屏布局。
+- 不新增移动端专属玩法模式。
+- 除非 CSS 无法满足需求，否则不加入 JavaScript 设备检测。
