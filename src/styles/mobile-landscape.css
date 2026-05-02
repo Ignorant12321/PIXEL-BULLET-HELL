@@ -11,7 +11,7 @@
   }
 
   .app {
-    grid-template-rows: 72px minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr);
     gap: 4px;
   }
 
@@ -19,9 +19,9 @@
     min-height: 0;
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 24px 40px;
+    grid-template-rows: 18px 30px;
     gap: 4px;
-    padding: 4px 6px;
+    padding: 3px 6px;
     overflow: hidden;
   }
 
@@ -38,7 +38,7 @@
 
   .brand h1 {
     overflow: hidden;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -51,25 +51,39 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0;
     align-self: stretch;
+    overflow: hidden;
+    border: 1px solid rgba(86, 246, 255, 0.16);
+    background: rgba(2, 7, 18, 0.46);
   }
 
   .stats .stat-card,
   .stats div {
-    height: 34px;
+    height: 28px;
     min-width: 0;
-    grid-template-columns: 16px minmax(0, 1fr);
-    grid-template-rows: 12px 1fr;
+    grid-template-columns: 14px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    align-items: center;
     gap: 0 4px;
-    padding: 3px 5px;
+    padding: 0 7px;
+    border: 0;
+    border-right: 1px solid rgba(86, 246, 255, 0.12);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .stats .stat-card:last-child,
+  .stats div:last-child {
+    border-right: 0;
   }
 
   .stats span {
-    width: 16px;
-    height: 16px;
-    font-size: 10px;
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
   }
 
   .stats small {
+    display: none;
     font-size: 9px;
     line-height: 1;
   }
@@ -99,19 +113,21 @@
 
   .actions {
     left: 8px;
-    top: 50px;
-    gap: 4px;
-    padding: 3px;
-    background: rgba(3, 8, 20, 0.48);
+    top: 8px;
+    gap: 3px;
+    padding: 2px;
+    background: rgba(3, 8, 20, 0.36);
     backdrop-filter: blur(2px);
   }
 
   .actions button {
-    width: 32px;
-    min-width: 32px;
-    height: 30px;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
     padding: 0;
     gap: 0;
+    opacity: 0.84;
+    box-shadow: none;
   }
 
   .actions em {

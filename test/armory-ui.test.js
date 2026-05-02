@@ -7,6 +7,7 @@ import {
   armoryRouteTabs,
   armoryTreeLayout,
   nextArmoryZoom,
+  pinchArmoryZoom,
   nodeState
 } from '../src/js/ui/armory-view.js';
 
@@ -123,4 +124,12 @@ test('nextArmoryZoom supports zoom controls with sensible limits', function () {
   assert.equal(nextArmoryZoom(1.1, 'reset'), 1);
   assert.equal(nextArmoryZoom(1.55, 'in'), 1.6);
   assert.equal(nextArmoryZoom(0.55, 'out'), 0.55);
+});
+
+test('pinchArmoryZoom scales from touch distance with the same limits', function () {
+  assert.equal(pinchArmoryZoom(1, 100, 125), 1.25);
+  assert.equal(pinchArmoryZoom(1.2, 120, 90), 0.9);
+  assert.equal(pinchArmoryZoom(1.5, 100, 140), 1.6);
+  assert.equal(pinchArmoryZoom(0.6, 100, 50), 0.55);
+  assert.equal(pinchArmoryZoom(1.2, 0, 140), 1.2);
 });

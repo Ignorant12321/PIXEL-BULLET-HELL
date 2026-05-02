@@ -23,6 +23,11 @@ test('armory tree exposes zoom controls', function () {
   assert.match(shopJs, /data-armory-zoom/);
 });
 
+test('armory tree binds pinch gestures for touch zoom', function () {
+  assert.match(shopJs, /pinchArmoryZoom/);
+  assert.match(shopJs, /activePointers/);
+});
+
 test('ship selection has an initial loading message before modules finish booting', function () {
   assert.match(html, /正在装载舰桥数据/);
 });

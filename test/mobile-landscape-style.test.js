@@ -20,12 +20,22 @@ test('mobile landscape overrides are scoped to touch landscape devices', functio
 });
 
 test('mobile landscape layout prioritizes the battlefield', function () {
-  assert.match(css, /\.app\s*\{[\s\S]*grid-template-rows:\s*72px minmax\(0,\s*1fr\)/);
+  assert.match(css, /\.app\s*\{[\s\S]*grid-template-rows:\s*56px minmax\(0,\s*1fr\)/);
   assert.match(css, /\.topbar\s*\{[\s\S]*grid-template-columns:\s*1fr/);
-  assert.match(css, /\.actions\s*\{[\s\S]*top:\s*50px/);
+  assert.match(css, /\.topbar\s*\{[\s\S]*grid-template-rows:\s*18px 30px/);
+  assert.match(css, /\.actions\s*\{[\s\S]*top:\s*8px/);
   assert.match(css, /\.layout\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   assert.match(css, /\.dock\s*\{[\s\S]*display:\s*none/);
   assert.match(css, /\.arena\s*\{[\s\S]*min-height:\s*0/);
+});
+
+test('mobile landscape topbar and action strip are compact', function () {
+  assert.match(css, /\.stats\s*\{[\s\S]*border:\s*1px solid rgba\(86,\s*246,\s*255,\s*0\.16\)/);
+  assert.match(css, /\.stats \.stat-card,\s*[\r\n ]+\.stats div\s*\{[\s\S]*height:\s*28px/);
+  assert.match(css, /\.stats \.stat-card,\s*[\r\n ]+\.stats div\s*\{[\s\S]*grid-template-columns:\s*14px minmax\(0,\s*1fr\)/);
+  assert.match(css, /\.actions button\s*\{[\s\S]*width:\s*28px/);
+  assert.match(css, /\.actions button\s*\{[\s\S]*height:\s*28px/);
+  assert.match(css, /\.actions button\s*\{[\s\S]*opacity:\s*0\.84/);
 });
 
 test('mobile landscape controls stay in lower combat corners', function () {

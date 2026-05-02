@@ -25,6 +25,15 @@ export function nextArmoryZoom(current, action) {
   return Math.min(1.6, Math.max(0.55, next));
 }
 
+export function pinchArmoryZoom(current, startDistance, currentDistance) {
+  const base = Number(current) || 1;
+  const start = Number(startDistance) || 0;
+  const distance = Number(currentDistance) || 0;
+  if (start <= 0 || distance <= 0) return base;
+  const next = Math.round(base * (distance / start) * 100) / 100;
+  return Math.min(1.6, Math.max(0.55, next));
+}
+
 export function armoryRouteSummary(view) {
   const groups = [];
   const byId = {};

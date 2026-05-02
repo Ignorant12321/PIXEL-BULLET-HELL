@@ -1,5 +1,5 @@
 import { renderTabs } from './dom.js';
-import { armoryRouteSelection, nextArmoryZoom, nodeState } from './armory-view.js';
+import { armoryRouteSelection, nextArmoryZoom, nodeState, pinchArmoryZoom } from './armory-view.js';
 import { contentModeForTab, initialShopTab } from './shop-view.js';
 
 export function createShopPanel(game, data, U, elements, callbacks) {
@@ -131,9 +131,7 @@ export function createShopPanel(game, data, U, elements, callbacks) {
         const tree = btn.closest('[data-armory-dragscroll]');
         const routeId = tree && tree.dataset.armoryRoute;
         if (!routeId) return;
-        armoryZoom[routeId] = nextArmoryZoom(armoryZoom[routeId] || 1, btn.dataset.armoryZoom);
-        dirty = true;
-        render();
+        setArmoryZoom(tree, nextArmoryZoom(armoryZoom[routeId] || 1, btn.dataset.armoryZoom), true);
       };
     });
     e.shopGrid.querySelectorAll('[data-respec-route]').forEach(function (btn) {
@@ -157,30 +155,81 @@ export function createShopPanel(game, data, U, elements, callbacks) {
     tree.scrollTo(Object.assign({ behavior: 'smooth' }, target));
   }
 
+  function setArmoryZoom(tree, zoom, rerender) {
+    const routeId = tree && tree.dataset.armoryRoute;
+    if (!routeId) return;
+    armoryZoom[routeId] = zoom;
+    tree.style.setProperty('--armory-zoom', zoom);
+    const reset = tree.querySelector('[data-armory-zoom="reset"]');
+    if (reset) reset.textContent = Math.round(zoom * 100) + '%';
+    if (rerender) {
+      dirty = true;
+      render();
+    }
+  }
+
+  function armoryPointerDistance(activePointers) {
+    const points = Array.from(activePointers.values());
+    if (points.length < 2) return 0;
+    const dx = points[0].x - points[1].x;
+    const dy = points[0].y - points[1].y;
+    return Math.hypot(dx, dy);
+  }
+
   function bindArmoryDragScroll() {
     e.shopGrid.querySelectorAll('[data-armory-dragscroll]').forEach(function (tree) {
+      const activePointers = new Map();
       let dragging = false;
+      let pinching = false;
+      let pinchStartDistance = 0;
+      let pinchStartZoom = 1;
       let startX = 0;
       let startY = 0;
       let left = 0;
       let top = 0;
       tree.onpointerdown = function (ev) {
-        if (ev.button !== 0 || ev.target.closest('.armory-tree-node, button')) return;
+        if (ev.button !== 0 || ev.target.closest('button')) return;
+        activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        try { tree.setPointerCapture(ev.pointerId); } catch (_) {}
+        if (activePointers.size >= 2) {
+          dragging = false;
+          pinching = true;
+          tree.classList.remove('dragging');
+          pinchStartDistance = armoryPointerDistance(activePointers);
+          pinchStartZoom = armoryZoom[tree.dataset.armoryRoute] || 1;
+          return;
+        }
+        if (ev.target.closest('.armory-tree-node')) return;
         dragging = true;
         startX = ev.clientX;
         startY = ev.clientY;
         left = tree.scrollLeft;
         top = tree.scrollTop;
         tree.classList.add('dragging');
-        tree.setPointerCapture(ev.pointerId);
       };
       tree.onpointermove = function (ev) {
+        if (activePointers.has(ev.pointerId)) {
+          activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        }
+        if (pinching && activePointers.size >= 2) {
+          setArmoryZoom(tree, pinchArmoryZoom(pinchStartZoom, pinchStartDistance, armoryPointerDistance(activePointers)), false);
+          return;
+        }
         if (!dragging) return;
         tree.scrollLeft = left - (ev.clientX - startX);
         tree.scrollTop = top - (ev.clientY - startY);
       };
       tree.onpointerup = tree.onpointercancel = function (ev) {
-        if (!dragging) return;
+        activePointers.delete(ev.pointerId);
+        if (pinching && activePointers.size < 2) {
+          pinching = false;
+          pinchStartDistance = 0;
+          pinchStartZoom = armoryZoom[tree.dataset.armoryRoute] || 1;
+        }
+        if (!dragging) {
+          try { tree.releasePointerCapture(ev.pointerId); } catch (_) {}
+          return;
+        }
         dragging = false;
         tree.classList.remove('dragging');
         try { tree.releasePointerCapture(ev.pointerId); } catch (_) {}
