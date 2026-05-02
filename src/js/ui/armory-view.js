@@ -17,6 +17,14 @@ export function nodeState(node, levels, coins) {
   return 'available';
 }
 
+export function nextArmoryZoom(current, action) {
+  if (action === 'reset') return 1;
+  const value = Number(current) || 1;
+  const step = action === 'in' ? 0.15 : action === 'out' ? -0.15 : 0;
+  const next = Math.round((value + step) * 100) / 100;
+  return Math.min(1.6, Math.max(0.55, next));
+}
+
 export function armoryRouteSummary(view) {
   const groups = [];
   const byId = {};

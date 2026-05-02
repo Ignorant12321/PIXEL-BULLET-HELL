@@ -20,7 +20,9 @@ test('mobile landscape overrides are scoped to touch landscape devices', functio
 });
 
 test('mobile landscape layout prioritizes the battlefield', function () {
-  assert.match(css, /\.app\s*\{[\s\S]*grid-template-rows:\s*44px minmax\(0,\s*1fr\)/);
+  assert.match(css, /\.app\s*\{[\s\S]*grid-template-rows:\s*72px minmax\(0,\s*1fr\)/);
+  assert.match(css, /\.topbar\s*\{[\s\S]*grid-template-columns:\s*1fr/);
+  assert.match(css, /\.actions\s*\{[\s\S]*top:\s*50px/);
   assert.match(css, /\.layout\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   assert.match(css, /\.dock\s*\{[\s\S]*display:\s*none/);
   assert.match(css, /\.arena\s*\{[\s\S]*min-height:\s*0/);
@@ -29,7 +31,9 @@ test('mobile landscape layout prioritizes the battlefield', function () {
 test('mobile landscape controls stay in lower combat corners', function () {
   assert.match(css, /\.touch-controls\s*\{[\s\S]*display:\s*flex/);
   assert.match(css, /\.touch-joystick\s*\{[\s\S]*left:\s*12px/);
+  assert.match(css, /\.touch-joystick\s*\{[\s\S]*border-radius:\s*50%/);
   assert.match(css, /\.touch-joystick-knob\s*\{[\s\S]*transform:\s*translate\(-50%,\s*-50%\)/);
+  assert.match(css, /\.touch-joystick-knob\s*\{[\s\S]*border-radius:\s*50%/);
   assert.match(css, /\.touch-actions\s*\{[\s\S]*right:\s*10px/);
   assert.match(css, /\.actions\s*\{[\s\S]*left:\s*8px/);
 });
@@ -47,4 +51,13 @@ test('mobile landscape overlays hide combat controls and center readable panels'
   assert.match(css, /\.app:\s*has\(\.modal-layer:not\(\.hidden\)\)\s+\.touch-controls\s*\{[\s\S]*display:\s*none/);
   assert.match(css, /\.modal\.codex,\s*[\r\n ]+\.modal\.info\s*\{[\s\S]*place-self:\s*center/);
   assert.match(css, /\.mobile-info-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(css, /\.mobile-info-card\s*\{[\s\S]*display:\s*grid/);
+  assert.match(css, /\.mobile-info-stat-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+});
+
+test('mobile landscape loading text and action buttons are visually quiet', function () {
+  assert.match(css, /\.ship-select\.loading\s*\{[\s\S]*grid-template-columns:\s*1fr/);
+  assert.match(css, /\.ship-select\.loading\s*\{[\s\S]*white-space:\s*nowrap/);
+  assert.match(css, /\.touch-actions button\s*\{[\s\S]*border-radius:\s*50%/);
+  assert.match(css, /\.touch-actions button\s*\{[\s\S]*opacity:\s*0\.76/);
 });

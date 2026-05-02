@@ -8,6 +8,16 @@ import {
   visibleShipPage
 } from './ship-select-view.js';
 
+export function briefStateForPhase(phase) {
+  const map = {
+    ready: ['选择星舰', '选择一艘星舰并守住右侧基地。', '开始'],
+    intermission: ['备战', '上一波已清空。可补给后继续下一波。', '下一波'],
+    gameover: ['防线失守', '星舰生命或基地生命归零。', '重开'],
+    victory: ['战役完成', '两幕防线已全部突破。', '重开']
+  };
+  return map[phase] || null;
+}
+
 export function createUI(game, data, U) {
   const e = {
     score: $('scoreText'), coin: $('coinText'), wave: $('waveText'), best: $('bestText'),
@@ -133,19 +143,12 @@ export function createUI(game, data, U) {
   }
 
   function updateBrief(view) {
-    if (st.modal || view.phase === 'playing') {
+    const item = briefStateForPhase(view.phase);
+    if (st.modal || !item) {
       e.brief.classList.add('hidden');
       if (e.shipSelect) e.shipSelect.classList.add('hidden');
       return;
     }
-    const map = {
-      ready: ['选择星舰', '选择一艘星舰并守住右侧基地。', '开始'],
-      paused: ['暂停', '战斗已暂停。', '继续'],
-      intermission: ['备战', '上一波已清空。可补给后继续下一波。', '下一波'],
-      gameover: ['防线失守', '星舰生命或基地生命归零。', '重开'],
-      victory: ['战役完成', '两幕防线已全部突破。', '重开']
-    };
-    const item = map[view.phase] || map.ready;
     e.brief.classList.remove('hidden');
     e.briefTitle.textContent = item[0];
     e.briefText.textContent = item[1];
@@ -259,27 +262,29 @@ export function createUI(game, data, U) {
 
   function renderMobileInfo(view) {
     if (!e.infoGrid) return;
+    const ship = shipById(view.shipId) || {};
     e.infoGrid.innerHTML = [
-      '<section class="card mobile-info-card"><div class="card-head"><h2>星舰型号</h2><span>' + U.escapeHtml(view.label) + '</span></div>',
-      e.shipInfo ? e.shipInfo.innerHTML : '',
+      '<section class="mobile-info-card mobile-info-ship"><div class="card-head"><h2>星舰型号</h2><span>' + U.escapeHtml(view.label) + '</span></div>',
+      '<div class="mobile-info-row"><div class="mobile-info-icon">' + U.icon(ship.icon || 'unknown', data.icons) + '</div><div><h3>' + U.escapeHtml(ship.name || '未知星舰') + '</h3><small>' + U.escapeHtml(ship.role || '') + '</small></div></div>',
+      '<p>' + U.escapeHtml(ship.brief || ship.special || '') + '</p>',
       '</section>',
-      '<section class="card mobile-info-card"><div class="card-head"><h2>武器</h2><span>' + U.escapeHtml(e.weaponLabel ? e.weaponLabel.textContent : '') + '</span></div>',
-      '<div class="mobile-info-readonly">' + (e.weaponDetail ? e.weaponDetail.innerHTML : '') + '</div></section>',
-      '<section class="card mobile-info-card"><div class="card-head"><h2>属性面板</h2><span>实时</span></div>',
-      '<div class="mobile-info-bars">',
+      '<section class="mobile-info-card"><div class="card-head"><h2>武器</h2><span>' + U.escapeHtml(e.weaponLabel ? e.weaponLabel.textContent : '') + '</span></div>',
+      '<p>当前武器：' + U.escapeHtml(e.weaponLabel ? e.weaponLabel.textContent : '单轨主炮') + '</p>',
+      '<p>伤害 ' + view.damage + ' / 弹道 ' + view.lanes + ' / 射速 ' + view.rate.toFixed(1) + 'x / 射程 ' + view.range + '</p></section>',
+      '<section class="mobile-info-card mobile-info-status"><div class="card-head"><h2>状态</h2><span>实时</span></div>',
       '<div class="barrow"><span>机体生命</span><strong>' + Math.round(view.hp) + '/' + view.maxHp + '</strong></div>',
       '<div class="meter"><i style="width:' + safeRatio(U, view.hp, view.maxHp) * 100 + '%"></i></div>',
       '<div class="barrow"><span>基地生命</span><strong>' + Math.round(view.base) + '/' + view.maxBase + '</strong></div>',
       '<div class="meter base"><i style="width:' + safeRatio(U, view.base, view.maxBase) * 100 + '%"></i></div>',
-      '</div>',
-      '<div class="ministats">',
+      '</section>',
+      '<section class="mobile-info-card mobile-info-stat-grid">',
       '<div><span>伤害</span><strong>' + view.damage + '</strong></div>',
       '<div><span>弹道</span><strong>' + view.lanes + '</strong></div>',
       '<div><span>射速</span><strong>' + view.rate.toFixed(1) + 'x</strong></div>',
       '<div><span>射程</span><strong>' + view.range + '</strong></div>',
       '<div><span>歼灭弹</span><strong>' + view.bombs + '</strong></div>',
-      '</div></section>',
-      '<section class="card mobile-info-card help"><h2>提示</h2><p>移动：左下摇杆 / WASD / 方向键<br>慢速：Shift 或右下慢速键　歼灭弹：X 或右下按钮<br>商店：B　图鉴：C　暂停：P</p></section>'
+      '</section>',
+      '<section class="mobile-info-card mobile-info-help"><h2>提示</h2><p>移动：左下摇杆 / WASD / 方向键<br>慢速：Shift 或右下小按钮　歼灭弹：X 或右下星标<br>商店：B　图鉴：C　暂停：P</p></section>'
     ].join('');
   }
 

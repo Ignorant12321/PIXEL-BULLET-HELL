@@ -6,6 +6,7 @@ import {
   armoryRouteSummary,
   armoryRouteTabs,
   armoryTreeLayout,
+  nextArmoryZoom,
   nodeState
 } from '../src/js/ui/armory-view.js';
 
@@ -114,4 +115,12 @@ test('armoryRouteSelection always shows one route tree and normalizes overview t
   assert.equal(overview.mode, 'tree');
   assert.equal(overview.activeRouteId, 'alpha');
   assert.deepEqual(overview.groups.map(function (group) { return group.routeId; }), ['alpha']);
+});
+
+test('nextArmoryZoom supports zoom controls with sensible limits', function () {
+  assert.equal(nextArmoryZoom(1, 'in'), 1.15);
+  assert.equal(nextArmoryZoom(1, 'out'), 0.85);
+  assert.equal(nextArmoryZoom(1.1, 'reset'), 1);
+  assert.equal(nextArmoryZoom(1.55, 'in'), 1.6);
+  assert.equal(nextArmoryZoom(0.55, 'out'), 0.55);
 });

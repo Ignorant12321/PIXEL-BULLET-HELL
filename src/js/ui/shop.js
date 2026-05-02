@@ -1,5 +1,5 @@
 import { renderTabs } from './dom.js';
-import { armoryRouteSelection, nodeState } from './armory-view.js';
+import { armoryRouteSelection, nextArmoryZoom, nodeState } from './armory-view.js';
 import { contentModeForTab, initialShopTab } from './shop-view.js';
 
 export function createShopPanel(game, data, U, elements, callbacks) {
@@ -7,6 +7,7 @@ export function createShopPanel(game, data, U, elements, callbacks) {
   const cb = callbacks || {};
   let tab = initialShopTab(data.shopTabs);
   let armoryRoute = 'core';
+  const armoryZoom = {};
   let lastCoins = -1;
   let dirty = true;
 
@@ -125,6 +126,16 @@ export function createShopPanel(game, data, U, elements, callbacks) {
         if (tree) panArmoryTree(tree, btn.dataset.armoryPan);
       };
     });
+    e.shopGrid.querySelectorAll('[data-armory-zoom]').forEach(function (btn) {
+      btn.onclick = function () {
+        const tree = btn.closest('[data-armory-dragscroll]');
+        const routeId = tree && tree.dataset.armoryRoute;
+        if (!routeId) return;
+        armoryZoom[routeId] = nextArmoryZoom(armoryZoom[routeId] || 1, btn.dataset.armoryZoom);
+        dirty = true;
+        render();
+      };
+    });
     e.shopGrid.querySelectorAll('[data-respec-route]').forEach(function (btn) {
       btn.onclick = function () {
         if (game.respecArmoryRoute(btn.dataset.respecRoute)) {
@@ -196,6 +207,7 @@ export function createShopPanel(game, data, U, elements, callbacks) {
   }
 
   function renderArmoryRoute(group, armory) {
+      const zoom = armoryZoom[group.routeId] || 1;
       const edgeMarkup = group.edges.map(function (edge) {
         const mid = (edge.x1 + edge.x2) / 2;
         return '<path d="M ' + edge.x1.toFixed(2) + ' ' + edge.y1.toFixed(2) + ' C ' + mid.toFixed(2) + ' ' + edge.y1.toFixed(2) + ', ' + mid.toFixed(2) + ' ' + edge.y2.toFixed(2) + ', ' + edge.x2.toFixed(2) + ' ' + edge.y2.toFixed(2) + '" />';
@@ -204,7 +216,12 @@ export function createShopPanel(game, data, U, elements, callbacks) {
         '<section class="armory-tree-route">',
         '<header><div><h3>' + U.escapeHtml(group.name) + '</h3><p>已投入 ￥' + U.num(group.spent) + '</p></div>',
         '<button class="route-reset" data-respec-route="' + group.routeId + '" title="' + U.escapeHtml(group.resetAction.title) + '"' + (group.resetAction.disabled ? ' disabled' : '') + ' aria-label="' + U.escapeHtml(group.name + group.resetAction.title) + '">' + group.resetAction.label + '</button></header>',
-        '<div class="armory-tree" data-armory-dragscroll style="--tier-count:' + Math.max(1, group.tiers.length) + '">',
+        '<div class="armory-tree" data-armory-dragscroll data-armory-route="' + group.routeId + '" style="--tier-count:' + Math.max(1, group.tiers.length) + ';--armory-zoom:' + zoom + '">',
+        '<nav class="armory-tree-zoom" aria-label="树图缩放">',
+        '<button type="button" data-armory-zoom="out" title="缩小">-</button>',
+        '<button type="button" data-armory-zoom="reset" title="100%">' + Math.round(zoom * 100) + '%</button>',
+        '<button type="button" data-armory-zoom="in" title="放大">+</button>',
+        '</nav>',
         '<nav class="armory-tree-nav" aria-label="树图定位">',
         '<button type="button" data-armory-pan="top" title="顶部">↑</button>',
         '<button type="button" data-armory-pan="left" title="左侧">←</button>',
